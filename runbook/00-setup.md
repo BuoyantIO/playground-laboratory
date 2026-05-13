@@ -61,8 +61,6 @@ Chart and images are published as public OCI artifacts on GHCR.
 ```sh
 helm install demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --set prometheus.enabled=true \
-  --set grafana.enabled=true \
   --version 1.0.4
 
 kubectl -n playground rollout status \

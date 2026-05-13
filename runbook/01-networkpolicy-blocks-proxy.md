@@ -1,4 +1,4 @@
-# 07 — NetworkPolicy blocks the inbound proxy port
+# 01 — NetworkPolicy blocks the inbound proxy port
 
 The Linkerd inbound proxy listens on `:4143` for meshed traffic and `:4191`
 for the admin server. A Kubernetes `NetworkPolicy` that selects meshed pods
