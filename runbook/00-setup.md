@@ -62,7 +62,7 @@ Chart and images are published as public OCI artifacts on GHCR.
 helm install demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
   --set prometheus.enabled=true \
-  --set grafana.enabled=true
+  --set grafana.enabled=true \
   --version 1.0.4
 
 kubectl -n playground rollout status \
@@ -77,7 +77,7 @@ three deployments come up with a `linkerd-proxy` sidecar.
 ## 4. Open the dashboard
 
 ```sh
-kubectl -n playground port-forward svc/playground-client 3000:3000 &
+kubectl -n playground port-forward svc/playground-client 3000:3000
 open http://localhost:3000
 ```
 
@@ -114,7 +114,7 @@ kubectl -n playground exec deploy/playground-client -c linkerd-proxy -- \
 linkerd diagnostics endpoints playground-server-http.playground.svc.cluster.local:8080
 
 # 5. Curl the destination from inside a meshed peer, with -v to see headers.
-POD=$(kubectl get pod  -l app=playground-client -o jsonpath='{.items[0].metadata.name}')
+POD=$(kubectl get pod -n playground -l app=playground-client -o jsonpath='{.items[0].metadata.name}')
 kubectl debug -n playground "$POD" --image=nicolaka/netshoot --profile=general --quiet -i -- \
   curl -sv http://playground-server-http.playground.svc.cluster.local:8080/ 2>&1 | tail -15
 # Look for: l5d-proxy-error, l5d-proxy-connection, l5d-client-id
