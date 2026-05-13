@@ -45,7 +45,7 @@ export function Topology({
         <Node
           title="Next.js client"
           subtitle="this browser"
-          tag="sma-client"
+          tag="playground-client"
           variant="outline"
           glowKey={total}
         />
@@ -237,9 +237,9 @@ export function Topology({
             subtitle={
               latest?.appVersion === 'v1' && latest?.servedBy
                 ? `pod · ${latest.servedBy}`
-                : 'sma-server-v1'
+                : 'playground-server-http-primary'
             }
-            tag={`sma-server · v1 · ${v1Count} hits`}
+            tag={`playground-server-http · v1 · ${v1Count} hits`}
             variant={targetVersion === 'v1' ? 'solid' : 'outline'}
             glowKey={v1Count}
           />
@@ -248,9 +248,9 @@ export function Topology({
             subtitle={
               latest?.appVersion === 'v2' && latest?.servedBy
                 ? `pod · ${latest.servedBy}`
-                : 'sma-server-v2'
+                : 'playground-server-http-canary'
             }
-            tag={`sma-server · v2 · ${v2Count} hits`}
+            tag={`playground-server-http · v2 · ${v2Count} hits`}
             variant={targetVersion === 'v2' ? 'solid' : 'outline'}
             glowKey={v2Count}
           />

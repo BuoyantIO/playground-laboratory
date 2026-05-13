@@ -7,8 +7,8 @@ import (
 	"os"
 	"strconv"
 
-	"sma-server/internal/config"
-	"sma-server/internal/faults"
+	"playground-server/internal/config"
+	"playground-server/internal/faults"
 )
 
 func main() {

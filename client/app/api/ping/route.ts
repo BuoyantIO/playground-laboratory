@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET() {
-  const url = process.env.SERVER_URL || 'http://sma-server.sma.svc.cluster.local:8080';
+  const url = process.env.SERVER_URL || 'http://playground-server-http.playground.svc.cluster.local:8080';
   const timeoutMs = parseInt(process.env.FETCH_TIMEOUT_MS || '0', 10);
   const started = Date.now();
 

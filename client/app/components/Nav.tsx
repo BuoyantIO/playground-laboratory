@@ -6,7 +6,7 @@ export function Nav() {
           <img src="/buoyant.png" alt="Buoyant" className="h-6 w-auto" />
           <span className="hidden h-5 w-px bg-navy-20 sm:block" />
           <span className="hidden font-mono text-xs uppercase tracking-[0.18em] text-navy-60 sm:inline">
-            sma demo
+            playground demo
           </span>
         </div>
         <a
