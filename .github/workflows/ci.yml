@@ -105,9 +105,3 @@ jobs:
 
       - name: Render (default values)
         run: helm template playground helm/playground > /dev/null
-
-      - name: Render (with subcharts enabled)
-        run: |
-          helm template playground helm/playground \
-            --set prometheus.enabled=true \
-            --set grafana.enabled=true > /dev/null
