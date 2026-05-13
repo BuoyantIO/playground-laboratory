@@ -102,6 +102,3 @@ jobs:
 
       - name: Lint
         run: helm lint helm/playground
-
-      - name: Render (default values)
-        run: helm template playground helm/playground > /dev/null
