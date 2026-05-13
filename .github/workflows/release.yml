@@ -15,7 +15,7 @@ permissions:
   packages: write
 
 jobs:
-  publish:
+  publish-images:
     name: Publish ${{ matrix.name }}
     runs-on: ubuntu-latest
     strategy:
@@ -23,11 +23,11 @@ jobs:
       matrix:
         include:
           - name: client
-            image: sma-client
+            image: playground-client
             context: client
             build-args: ''
           - name: server (http)
-            image: sma-server
+            image: playground-server
             context: server
             build-args: |
               CMD=http
@@ -69,3 +69,39 @@ jobs:
           build-args: ${{ matrix.build-args }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  publish-chart:
+    name: Publish Helm chart
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Resolve version
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
+          echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      - uses: azure/setup-helm@v4
+
+      - name: Add chart repositories
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo add grafana-community https://grafana-community.github.io/helm-charts
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Package chart
+        run: |
+          helm dependency update helm/playground
+          mkdir -p dist
+          helm package helm/playground \
+            --version "${VERSION}" \
+            --app-version "${VERSION}" \
+            --destination dist
+
+      - name: Push chart
+        run: helm push "dist/playground-${VERSION}.tgz" "oci://ghcr.io/${REPO_LC}/charts"
