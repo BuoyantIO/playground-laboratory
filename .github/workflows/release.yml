@@ -85,11 +85,8 @@ jobs:
           echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
       - uses: azure/setup-helm@v4
-
-      - name: Add chart repositories
-        run: |
-          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-          helm repo add grafana-community https://grafana-community.github.io/helm-charts
+        with:
+          version: v3.16.4
 
       - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
