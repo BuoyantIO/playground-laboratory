@@ -22,6 +22,8 @@ dist/
 *.out
 vendor/
 server/sma-server
+server/bin/
+server/dist/
 
 # Environment files
 .env
