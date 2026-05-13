@@ -21,10 +21,11 @@ h1, h2, h3, h4 {
 }
 
 @keyframes pulse-travel {
-  0%   { transform: translateX(0); opacity: 0; }
-  10%  { transform: translateX(0); opacity: 1; }
-  90%  { transform: translateX(var(--travel-x, 360px)); opacity: 0.9; }
-  100% { transform: translateX(var(--travel-x, 360px)); opacity: 0; }
+  0%   { transform: translate(0, 0); opacity: 0; }
+  10%  { transform: translate(0, 0); opacity: 1; }
+  50%  { transform: translate(var(--fork-x, 212px), 0); opacity: 1; }
+  90%  { transform: translate(var(--travel-x, 460px), var(--travel-y, 0)); opacity: 0.9; }
+  100% { transform: translate(var(--travel-x, 460px), var(--travel-y, 0)); opacity: 0; }
 }
 
 .pulse-travel {

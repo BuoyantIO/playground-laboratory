@@ -220,6 +220,7 @@ export function Topology({
                 key={`${total}-${targetVersion}`}
                 className="pulse-travel"
                 style={{
+                  ['--fork-x' as string]: `${forkX - clientX}px`,
                   ['--travel-x' as string]: `${pulseDestX - clientX}px`,
                   ['--travel-y' as string]: `${pulseDestY - yMid}px`,
                 }}
