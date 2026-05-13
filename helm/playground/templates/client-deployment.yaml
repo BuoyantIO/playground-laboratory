@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: playground-client
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    app: playground-client
+    app.kubernetes.io/name: playground-client
+    app.kubernetes.io/part-of: playground
+spec:
+  replicas: {{ .Values.client.replicas }}
+  selector:
+    matchLabels:
+      app: playground-client
+  template:
+    metadata:
+      labels:
+        app: playground-client
+        app.kubernetes.io/name: playground-client
+        app.kubernetes.io/part-of: playground
+      {{- with .Values.client.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ .Values.client.serviceAccount.name }}
+      containers:
+        - name: client
+          image: "{{ .Values.client.image.repository }}:{{ .Values.client.image.tag }}"
+          imagePullPolicy: {{ .Values.client.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: SERVER_URL
+              value: "http://playground-server-http.{{ .Values.namespace.name }}.svc.cluster.local:{{ .Values.http.service.port }}"
+            {{- range $k, $v := .Values.client.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 5
+          resources:
+            {{- toYaml .Values.client.resources | nindent 12 }}

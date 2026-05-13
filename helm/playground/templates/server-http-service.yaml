@@ -1,0 +1,17 @@
+# Apex service, selects every HTTP server pod regardless of role.
+apiVersion: v1
+kind: Service
+metadata:
+  name: playground-server-http
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    app: playground-server-http
+    app.kubernetes.io/part-of: playground
+spec:
+  type: {{ .Values.http.service.type }}
+  selector:
+    app: playground-server-http
+  ports:
+    - name: http
+      port: {{ .Values.http.service.port }}
+      targetPort: http

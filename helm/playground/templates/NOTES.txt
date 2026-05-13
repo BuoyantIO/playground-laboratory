@@ -1,0 +1,36 @@
+{{ .Chart.Name }} {{ .Chart.Version }} installed in namespace "{{ .Values.namespace.name }}".
+
+Resources:
+  Deployment/playground-server-http-primary  (Go, env-tunable failure modes)
+  Deployment/playground-server-http-canary   (Go, env-tunable failure modes)
+  Deployment/playground-client               (Next.js, polls /api/ping every 1s)
+  Service/playground-server-http             :{{ .Values.http.service.port }}  apex
+  Service/playground-server-http-primary     :{{ .Values.http.service.port }}
+  Service/playground-server-http-canary      :{{ .Values.http.service.port }}
+  Service/playground-client                  :{{ .Values.client.service.port }}
+
+Open the client UI:
+  kubectl -n {{ .Values.namespace.name }} port-forward svc/playground-client {{ .Values.client.service.port }}:{{ .Values.client.service.port }}
+  open http://localhost:{{ .Values.client.service.port }}
+
+Primary env:
+{{- range $k, $v := .Values.http.primary.env }}
+  {{ $k }}={{ $v }}
+{{- end }}
+
+Canary env:
+{{- range $k, $v := .Values.http.canary.env }}
+  {{ $k }}={{ $v }}
+{{- end }}
+
+Introduce issues at runtime, e.g.:
+  helm upgrade {{ .Release.Name }} helm/playground -n {{ .Values.namespace.name }} \
+    --set http.canary.env.LATENCY_MS=2000 \
+    --set http.canary.env.LATENCY_JITTER_MS=500 \
+    --set http.canary.env.ERROR_RATE=30 \
+    --set http.canary.env.ERROR_CODE=503
+
+Other failure knobs (per role under http.primary.env / http.canary.env):
+  FAIL_ON_STARTUP=true        crashloop on boot
+  CRASH_AFTER_REQUESTS=100    exit after N requests
+  READINESS_FAIL_RATE=50      flap readiness (% of probes that fail)

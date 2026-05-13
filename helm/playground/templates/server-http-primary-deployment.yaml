@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: playground-server-http-primary
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    app: playground-server-http
+    role: primary
+    app.kubernetes.io/name: playground-server-http
+    app.kubernetes.io/part-of: playground
+spec:
+  replicas: {{ .Values.http.primary.replicas }}
+  selector:
+    matchLabels:
+      app: playground-server-http
+      role: primary
+  template:
+    metadata:
+      labels:
+        app: playground-server-http
+        role: primary
+        app.kubernetes.io/name: playground-server-http
+        app.kubernetes.io/part-of: playground
+      {{- with .Values.http.primary.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ .Values.http.primary.serviceAccount.name }}
+      containers:
+        - name: server
+          image: "{{ .Values.http.image.repository }}:{{ .Values.http.image.tag }}"
+          imagePullPolicy: {{ .Values.http.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            {{- range $k, $v := .Values.http.primary.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            failureThreshold: 5
+          resources:
+            {{- toYaml .Values.http.primary.resources | nindent 12 }}

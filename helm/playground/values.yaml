@@ -1,0 +1,72 @@
+namespace:
+  name: playground
+  annotations:
+    linkerd.io/inject: enabled
+
+# --- Server ------------------------------------------------------------
+http:
+  image:
+    repository: ghcr.io/buoyantio/playground-laboratory/playground-server
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8080
+
+  primary:
+    replicas: 1
+    serviceAccount:
+      name: playground-server-http-primary
+    env:
+      APP_VERSION: "v1"
+      RESPONSE_TEXT: "hello from primary"
+      LATENCY_MS: "0"
+      LATENCY_JITTER_MS: "0"
+      ERROR_RATE: "0"
+      ERROR_CODE: "500"
+      FAIL_ON_STARTUP: "false"
+      CRASH_AFTER_REQUESTS: "0"
+      READINESS_FAIL_RATE: "0"
+    resources: {}
+    podAnnotations: {}
+
+  canary:
+    replicas: 1
+    serviceAccount:
+      name: playground-server-http-canary
+    env:
+      APP_VERSION: "v2"
+      RESPONSE_TEXT: "hello from canary"
+      LATENCY_MS: "0"
+      LATENCY_JITTER_MS: "0"
+      ERROR_RATE: "0"
+      ERROR_CODE: "500"
+      FAIL_ON_STARTUP: "false"
+      CRASH_AFTER_REQUESTS: "0"
+      READINESS_FAIL_RATE: "0"
+    resources: {}
+    podAnnotations: {}
+
+# --- Client -------------------------------------------------------------
+client:
+  replicas: 1
+  image:
+    repository: ghcr.io/buoyantio/playground-laboratory/playground-client
+    tag: latest
+    pullPolicy: Always
+  serviceAccount:
+    name: playground-client
+  service:
+    type: ClusterIP
+    port: 3000
+  env:
+    FETCH_TIMEOUT_MS: "0"
+  resources: {}
+  podAnnotations: {}
+
+# --- Observability subcharts -------------------------------------------
+prometheus:
+  enabled: false
+
+grafana:
+  enabled: false
