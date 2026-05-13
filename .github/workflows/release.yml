@@ -94,6 +94,9 @@ jobs:
       - name: Package chart
         run: |
           helm dependency update helm/playground
+          # Workaround: recent Helm versions only recognize subchart
+          # dependencies as extracted directories, not as <name>-<ver>.tgz.
+          (cd helm/playground/charts && for f in *.tgz; do tar xzf "$f"; done)
           mkdir -p dist
           helm package helm/playground \
             --version "${VERSION}" \
