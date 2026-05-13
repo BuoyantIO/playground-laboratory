@@ -67,6 +67,16 @@ client:
 # --- Observability subcharts -------------------------------------------
 prometheus:
   enabled: false
+  forceNamespace: monitoring
+  alertmanager:
+    namespaceOverride: monitoring
+  kube-state-metrics:
+    namespaceOverride: monitoring
+  prometheus-node-exporter:
+    namespaceOverride: monitoring
+  prometheus-pushgateway:
+    namespaceOverride: monitoring
 
 grafana:
   enabled: false
+  namespaceOverride: monitoring
