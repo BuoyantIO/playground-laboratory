@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inconsolata:wght@400;500;600&display=swap');
+
+:root {
+  color-scheme: light;
+}
+
+html, body {
+  background: #ffffff;
+  color: #003359;
+  min-height: 100vh;
+  font-family: 'Manrope', Arial, sans-serif;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Manrope', Arial, sans-serif;
+  color: #003359;
+}
+
+@keyframes pulse-travel {
+  0%   { transform: translateX(0); opacity: 0; }
+  10%  { transform: translateX(0); opacity: 1; }
+  90%  { transform: translateX(var(--travel-x, 360px)); opacity: 0.9; }
+  100% { transform: translateX(var(--travel-x, 360px)); opacity: 0; }
+}
+
+.pulse-travel {
+  animation: pulse-travel 0.85s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes node-glow {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(100, 249, 191, 0)); }
+  50%      { filter: drop-shadow(0 0 8px rgba(100, 249, 191, 0.6)); }
+}
+
+.node-glow {
+  animation: node-glow 0.85s ease-out;
+}
