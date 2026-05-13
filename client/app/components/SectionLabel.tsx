@@ -7,7 +7,7 @@ export function SectionLabel({
 }) {
   return (
     <h2
-      className={`mb-4 font-mono text-xs uppercase tracking-[0.18em] text-navy-60 ${className}`}
+      className={`mb-5 font-mono text-xs uppercase tracking-[0.2em] text-navy-60 ${className}`}
     >
       {children}
     </h2>

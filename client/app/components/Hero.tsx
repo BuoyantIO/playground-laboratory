@@ -14,12 +14,12 @@ export function Hero() {
             <span className="font-mono text-xs text-navy-60">demo</span>
           </div>
 
-          <h1 className="font-sans text-5xl font-medium leading-[1.05] tracking-tight text-navy md:text-7xl">
+          <h1 className="font-sans text-5xl font-medium leading-[1.1] tracking-tight text-navy md:text-7xl">
             Watch the mesh<br />
             <span className="text-navy-60">in real time.</span>
           </h1>
 
-          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-navy-70 md:text-xl">
+          <p className="mt-8 max-w-2xl text-lg leading-relaxed text-navy-70 md:text-xl">
             A Next.js client polls a Go backend once a second. Inject
             latency, flip error rates, or crash the server — and see exactly
             how the mesh responds.

@@ -96,11 +96,11 @@ export function Topology({
             {/* Protocol pill on the trunk */}
             <g>
               <rect
-                x={(clientX + forkX) / 2 - 85}
-                y={yMid - 15}
-                width="170"
-                height="30"
-                rx="15"
+                x={(clientX + forkX) / 2 - 95}
+                y={yMid - 16}
+                width="190"
+                height="32"
+                rx="16"
                 fill={meshed || !latest ? '#003359' : '#5a1626'}
               />
               <text
@@ -258,7 +258,7 @@ export function Topology({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-gray1 bg-navy-3 px-6 py-3 font-mono text-xs text-navy-60 md:px-10">
+      <div className="flex flex-wrap items-center gap-x-7 gap-y-2.5 border-t border-gray1 bg-navy-3 px-6 py-4 font-mono text-xs text-navy-60 md:px-10">
         <span>
           upstream <span className="text-navy">{upstream || '—'}</span>
         </span>
@@ -339,7 +339,7 @@ function Node({
           {subtitle}
         </div>
         <div
-          className={`mt-1 inline-block rounded-full px-2 py-0.5 font-mono text-[10px] ${
+          className={`mt-1.5 inline-block max-w-full truncate whitespace-nowrap rounded-full px-2 py-0.5 font-mono text-[10px] ${
             solid ? 'bg-white/10 text-white/80' : 'bg-navy-5 text-navy-70'
           }`}
         >
