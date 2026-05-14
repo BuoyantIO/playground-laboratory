@@ -1,3 +1,7 @@
+'use client';
+
+import { useTranslation } from '../lib/i18n';
+
 export function StatusPill({ ok, status }: { ok: boolean; status: number }) {
   if (status === 0) {
     return (
@@ -37,10 +41,11 @@ export function VersionPill({ version }: { version?: string }) {
 }
 
 export function MeshPill({ clientId }: { clientId?: string }) {
+  const { t } = useTranslation();
   const meshed = !!clientId;
   return (
     <span
-      title={clientId || 'no l5d-client-id header on response — proxy bypassed'}
+      title={clientId || t('pills.plain.title')}
       className={`inline-flex items-center gap-1.5 rounded-button px-2.5 py-0.5 text-xs font-semibold ${
         meshed ? 'bg-electric/40 text-navy' : 'bg-red/10 text-red'
       }`}

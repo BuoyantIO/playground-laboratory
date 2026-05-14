@@ -1,11 +1,15 @@
+'use client';
+
 import { niceCeil } from '../lib/format';
+import { useTranslation } from '../lib/i18n';
 import type { Sample } from '../lib/types';
 
 export function LatencyChart({ samples }: { samples: Sample[] }) {
+  const { t } = useTranslation();
   if (samples.length < 2) {
     return (
       <div className="flex h-32 items-center justify-center rounded-card border border-gray1 bg-white font-mono text-sm text-navy-40">
-        collecting samples…
+        {t('chart.collecting')}
       </div>
     );
   }
@@ -96,7 +100,7 @@ export function LatencyChart({ samples }: { samples: Sample[] }) {
           fill="#8099ac"
           style={{ fontFamily: 'Inconsolata, monospace', fontSize: '10px' }}
         >
-          now
+          {t('chart.now')}
         </text>
         <text
           x={PAD.left}
@@ -105,7 +109,7 @@ export function LatencyChart({ samples }: { samples: Sample[] }) {
           fill="#8099ac"
           style={{ fontFamily: 'Inconsolata, monospace', fontSize: '10px' }}
         >
-          −{ordered.length}s
+          {t('chart.ago', { n: ordered.length })}
         </text>
         <text
           x={PAD.left}

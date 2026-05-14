@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslation } from '../lib/i18n';
 import type { Counters, Sample } from '../lib/types';
 import { ClientIcon, ServerIcon } from './Icons';
 
@@ -10,6 +13,7 @@ export function Topology({
   counters: Counters;
   upstream: string;
 }) {
+  const { t } = useTranslation();
   const latest = samples[0];
   const { ok: okCount, fail: failCount, v1: v1Count, v2: v2Count } = counters;
   const total = okCount + failCount;
@@ -43,8 +47,8 @@ export function Topology({
     <div className="overflow-hidden rounded-card border border-gray1 bg-white">
       <div className="grid grid-cols-1 gap-6 px-6 py-8 md:grid-cols-[1fr_2fr_1fr] md:items-center md:gap-4 md:px-10 md:py-10">
         <Node
-          title="Next.js client"
-          subtitle="this browser"
+          title={t('topology.client')}
+          subtitle={t('topology.thisBrowser')}
           tag="playground-client"
           variant="outline"
           glowKey={total}
@@ -169,7 +173,7 @@ export function Topology({
             >
               {latest
                 ? `${latest.status || 'ERR'} · ${latest.latencyMs} ms`
-                : 'waiting…'}
+                : t('topology.waiting')}
             </text>
 
             {/* v1 / v2 chips on the right */}
@@ -234,24 +238,24 @@ export function Topology({
 
         <div className="flex flex-col gap-3">
           <Node
-            title="Go server v1"
+            title={t('topology.serverV1')}
             subtitle={
               latest?.appVersion === 'v1' && latest?.servedBy
-                ? `pod · ${latest.servedBy}`
+                ? t('topology.pod', { name: latest.servedBy })
                 : 'playground-server-http-primary'
             }
-            tag={`playground-server-http · v1 · ${v1Count} hits`}
+            tag={`playground-server-http · v1 · ${t('topology.hits', { n: v1Count })}`}
             variant={targetVersion === 'v1' ? 'solid' : 'outline'}
             glowKey={v1Count}
           />
           <Node
-            title="Go server v2"
+            title={t('topology.serverV2')}
             subtitle={
               latest?.appVersion === 'v2' && latest?.servedBy
-                ? `pod · ${latest.servedBy}`
+                ? t('topology.pod', { name: latest.servedBy })
                 : 'playground-server-http-canary'
             }
-            tag={`playground-server-http · v2 · ${v2Count} hits`}
+            tag={`playground-server-http · v2 · ${t('topology.hits', { n: v2Count })}`}
             variant={targetVersion === 'v2' ? 'solid' : 'outline'}
             glowKey={v2Count}
           />
@@ -266,7 +270,7 @@ export function Topology({
         <span>
           mtls{' '}
           <span className={meshed ? 'text-green' : 'text-red'}>
-            {!latest ? '—' : meshed ? 'verified' : 'absent'}
+            {!latest ? '—' : meshed ? t('topology.verified') : t('topology.absent')}
           </span>
         </span>
         <span className="text-navy-30">·</span>

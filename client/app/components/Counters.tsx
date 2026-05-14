@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslation } from '../lib/i18n';
 import { latencyTone, statusLabel } from '../lib/format';
 import type { Counters as CountersType, Sample } from '../lib/types';
 import { Stat } from './Stat';
@@ -9,6 +12,7 @@ export function Counters({
   samples: Sample[];
   counters: CountersType;
 }) {
+  const { t } = useTranslation();
   const latest = samples[0];
   const total = counters.ok + counters.fail;
   const successRate = total ? Math.round((counters.ok / total) * 100) : 0;
@@ -20,17 +24,17 @@ export function Counters({
   return (
     <div className="grid gap-4 md:grid-cols-4">
       <Stat
-        label="Last response"
+        label={t('counters.lastResponse')}
         value={latest ? statusLabel(latest) : '—'}
         tone={!latest ? undefined : latest.ok ? 'ok' : 'err'}
       />
       <Stat
-        label="Last latency"
+        label={t('counters.lastLatency')}
         value={latest ? `${latest.latencyMs} ms` : '—'}
         tone={latencyTone(latest?.latencyMs)}
       />
       <Stat
-        label="Success rate"
+        label={t('counters.successRate')}
         value={`${successRate}%`}
         tone={successRate >= 95 ? 'ok' : successRate >= 50 ? 'warn' : 'err'}
         okCount={counters.ok}
@@ -38,9 +42,9 @@ export function Counters({
         highlight
       />
       <Stat
-        label="Avg latency"
+        label={t('counters.avgLatency')}
         value={`${avgLatency} ms`}
-        sub={`max ${maxLatency} ms`}
+        sub={t('counters.max', { ms: maxLatency })}
       />
     </div>
   );

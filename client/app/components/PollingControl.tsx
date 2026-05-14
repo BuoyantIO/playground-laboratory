@@ -1,6 +1,7 @@
 'use client';
 
 import { POLL_INTERVAL_OPTIONS } from '../lib/constants';
+import { useTranslation } from '../lib/i18n';
 import { ConfigField } from './ConfigField';
 
 interface PollingControlProps {
@@ -17,23 +18,29 @@ export function PollingControl({
   pollIntervalMs,
   onChange,
 }: PollingControlProps) {
+  const { t } = useTranslation();
+
   // If the active value isn't one of the predefined options (e.g. set via
   // env to a non-canonical value), append it so the dropdown still reflects
   // the truth.
-  const options = POLL_INTERVAL_OPTIONS.some(o => o.value === pollIntervalMs)
+  const baseOptions = POLL_INTERVAL_OPTIONS.some(o => o.value === pollIntervalMs)
     ? POLL_INTERVAL_OPTIONS
     : [
         ...POLL_INTERVAL_OPTIONS,
         { label: `${pollIntervalMs} ms`, value: pollIntervalMs },
       ];
 
+  const options = baseOptions.map(opt =>
+    opt.value === 0 ? { ...opt, label: t('polling.paused') } : opt,
+  );
+
   const hint =
     pollIntervalMs <= 0
-      ? 'Paused — no requests in flight'
-      : `Next request in ≤ ${pollIntervalMs} ms`;
+      ? t('polling.hintPaused')
+      : t('polling.hintActive', { ms: pollIntervalMs });
 
   return (
-    <ConfigField label="Polling interval" htmlFor="poll-interval" hint={hint}>
+    <ConfigField label={t('polling.label')} htmlFor="poll-interval" hint={hint}>
       <select
         id="poll-interval"
         value={pollIntervalMs}

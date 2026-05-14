@@ -1,19 +1,23 @@
+'use client';
+
+import { useTranslation } from '../lib/i18n';
 import type { Sample } from '../lib/types';
 import { MeshPill, StatusPill, VersionPill } from './Pills';
 
 export function SamplesTable({ samples }: { samples: Sample[] }) {
+  const { t } = useTranslation();
   return (
     <div className="max-h-80 overflow-y-auto rounded-card border border-gray1 bg-white">
       <table className="w-full text-left font-mono text-sm">
         <thead className="sticky top-0 border-b border-gray1 bg-navy-3 text-navy-60">
           <tr>
-            <th className="px-6 py-3.5 font-medium">Time</th>
-            <th className="px-6 py-3.5 font-medium">Status</th>
-            <th className="px-6 py-3.5 font-medium">Latency</th>
-            <th className="px-6 py-3.5 font-medium">Version</th>
-            <th className="px-6 py-3.5 font-medium">mTLS</th>
-            <th className="px-6 py-3.5 font-medium">Served by</th>
-            <th className="px-6 py-3.5 font-medium">Body</th>
+            <th className="px-6 py-3.5 font-medium">{t('table.time')}</th>
+            <th className="px-6 py-3.5 font-medium">{t('table.status')}</th>
+            <th className="px-6 py-3.5 font-medium">{t('table.latency')}</th>
+            <th className="px-6 py-3.5 font-medium">{t('table.version')}</th>
+            <th className="px-6 py-3.5 font-medium">{t('table.mtls')}</th>
+            <th className="px-6 py-3.5 font-medium">{t('table.servedBy')}</th>
+            <th className="px-6 py-3.5 font-medium">{t('table.body')}</th>
           </tr>
         </thead>
         <tbody>
@@ -49,7 +53,7 @@ export function SamplesTable({ samples }: { samples: Sample[] }) {
                 colSpan={7}
                 className="px-6 py-14 text-center text-navy-40"
               >
-                waiting for first response…
+                {t('table.waiting')}
               </td>
             </tr>
           )}

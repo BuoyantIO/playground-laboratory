@@ -13,10 +13,12 @@ import { SectionLabel } from './components/SectionLabel';
 import { Topology } from './components/Topology';
 import { usePinger } from './hooks/usePinger';
 import { MAX_HISTORY } from './lib/constants';
+import { useTranslation } from './lib/i18n';
 
 export default function Home() {
   const { samples, upstream, counters, pollIntervalMs, setPollIntervalMs } =
     usePinger();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-white text-navy">
@@ -26,8 +28,8 @@ export default function Home() {
 
       <main className="mx-auto max-w-6xl px-6 py-14 md:px-12 md:py-16">
         <ConfigPanel
-          title="Client controls"
-          description="Tune the live polling behaviour. Defaults come from POLL_INTERVAL_MS / POLL_ENABLED env vars on the playground-client pod."
+          title={t('config.title')}
+          description={t('config.description')}
         >
           <PollingControl
             pollIntervalMs={pollIntervalMs}
@@ -35,17 +37,17 @@ export default function Home() {
           />
         </ConfigPanel>
 
-        <SectionLabel className="mt-12">Live traffic</SectionLabel>
+        <SectionLabel className="mt-12">{t('section.live')}</SectionLabel>
         <Topology samples={samples} counters={counters} upstream={upstream} />
 
-        <SectionLabel className="mt-14">Latency timeline</SectionLabel>
+        <SectionLabel className="mt-14">{t('section.latency')}</SectionLabel>
         <LatencyChart samples={samples} />
 
-        <SectionLabel className="mt-14">Counters</SectionLabel>
+        <SectionLabel className="mt-14">{t('section.counters')}</SectionLabel>
         <Counters samples={samples} counters={counters} />
 
         <SectionLabel className="mt-14">
-          Recent samples
+          {t('section.samples')}
           <span className="ml-2 font-mono text-xs font-normal normal-case tracking-normal text-navy-40">
             {samples.length} / {MAX_HISTORY}
           </span>
