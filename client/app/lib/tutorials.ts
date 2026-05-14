@@ -95,6 +95,18 @@ export const tutorials: TutorialMeta[] = [
       kr: '둘 다 Service에 연결되면 프록시는 ServiceProfile을 사용하고 HTTPRoute를 조용히 무시합니다.',
     },
   },
+  {
+    slug: '09-webhook-cabundle-expired',
+    order: '09',
+    title: {
+      en: 'Expired webhook caBundle blocks pod admission',
+      kr: '만료된 웹훅 caBundle이 파드 어드미션을 차단합니다',
+    },
+    blurb: {
+      en: "Once the injector / validator webhook's caBundle expires, new pods skip sidecar injection and new ServiceProfile / policy resources fail admission.",
+      kr: '인젝터 / 밸리데이터 웹훅의 caBundle이 만료되면 새 파드에 사이드카가 주입되지 않고 새 ServiceProfile / Policy 리소스 생성이 실패합니다.',
+    },
+  },
 ];
 
 export function findTutorial(slug: string): TutorialMeta | undefined {

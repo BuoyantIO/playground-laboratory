@@ -7,7 +7,7 @@ namespace:
 http:
   image:
     repository: ghcr.io/buoyantio/playground-laboratory/playground-server
-    tag: 1.0.10
+    tag: 1.0.11
     pullPolicy: Always
   service:
     type: ClusterIP
@@ -52,7 +52,7 @@ client:
   replicas: 1
   image:
     repository: ghcr.io/buoyantio/playground-laboratory/playground-client
-    tag: 1.0.10
+    tag: 1.0.11
     pullPolicy: Always
   serviceAccount:
     name: playground-client
