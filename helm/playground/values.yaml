@@ -61,6 +61,12 @@ client:
     port: 3000
   env:
     FETCH_TIMEOUT_MS: "0"
+    # Polling cadence (ms) read by the Next.js client at runtime via /api/config.
+    # Can be overridden in the UI with the Pause/Resume button.
+    POLL_INTERVAL_MS: "1000"
+    # Set to "false" to start the client with polling disabled. The UI can still
+    # resume it on demand.
+    POLL_ENABLED: "true"
   resources: {}
   podAnnotations: {}
 

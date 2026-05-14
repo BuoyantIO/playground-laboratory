@@ -1,11 +1,13 @@
 'use client';
 
 import { AnnouncementBar } from './components/AnnouncementBar';
+import { ConfigPanel } from './components/ConfigPanel';
 import { Counters } from './components/Counters';
 import { Footer } from './components/Footer';
 import { Hero } from './components/Hero';
 import { LatencyChart } from './components/LatencyChart';
 import { Nav } from './components/Nav';
+import { PollingControl } from './components/PollingControl';
 import { SamplesTable } from './components/SamplesTable';
 import { SectionLabel } from './components/SectionLabel';
 import { Topology } from './components/Topology';
@@ -13,7 +15,8 @@ import { usePinger } from './hooks/usePinger';
 import { MAX_HISTORY } from './lib/constants';
 
 export default function Home() {
-  const { samples, upstream, counters } = usePinger();
+  const { samples, upstream, counters, pollIntervalMs, setPollIntervalMs } =
+    usePinger();
 
   return (
     <div className="min-h-screen bg-white text-navy">
@@ -22,7 +25,17 @@ export default function Home() {
       <Hero />
 
       <main className="mx-auto max-w-6xl px-6 py-14 md:px-12 md:py-16">
-        <SectionLabel>Live traffic</SectionLabel>
+        <ConfigPanel
+          title="Client controls"
+          description="Tune the live polling behaviour. Defaults come from POLL_INTERVAL_MS / POLL_ENABLED env vars on the playground-client pod."
+        >
+          <PollingControl
+            pollIntervalMs={pollIntervalMs}
+            onChange={setPollIntervalMs}
+          />
+        </ConfigPanel>
+
+        <SectionLabel className="mt-12">Live traffic</SectionLabel>
         <Topology samples={samples} counters={counters} upstream={upstream} />
 
         <SectionLabel className="mt-14">Latency timeline</SectionLabel>
@@ -39,7 +52,7 @@ export default function Home() {
         </SectionLabel>
         <SamplesTable samples={samples} />
 
-        <Footer />
+        <Footer pollIntervalMs={pollIntervalMs} />
       </main>
     </div>
   );
