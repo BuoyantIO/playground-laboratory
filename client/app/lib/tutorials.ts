@@ -84,18 +84,6 @@ export const tutorials: TutorialMeta[] = [
     },
   },
   {
-    slug: '07-opaque-port-mishap',
-    order: '07',
-    title: {
-      en: 'HTTP port mis-marked opaque silently disables routing',
-      kr: 'HTTP 포트를 opaque로 잘못 표시하면 라우팅이 조용히 비활성화됩니다',
-    },
-    blurb: {
-      en: 'Marking an HTTP port opaque drops per-route metrics, HTTPRoute, and AuthorizationPolicy.',
-      kr: 'HTTP 포트를 opaque로 표시하면 경로별 메트릭, HTTPRoute, AuthorizationPolicy가 사라집니다.',
-    },
-  },
-  {
     slug: '08-serviceprofile-vs-httproute',
     order: '08',
     title: {
