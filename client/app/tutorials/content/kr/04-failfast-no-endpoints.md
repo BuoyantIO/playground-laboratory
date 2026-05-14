@@ -152,7 +152,7 @@ failfast를 빠져나옵니다.
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.8 --reset-values
+  --version 1.0.9 --reset-values
 kubectl -n playground rollout status \
   deploy/playground-server-http-primary deploy/playground-server-http-canary
 ```

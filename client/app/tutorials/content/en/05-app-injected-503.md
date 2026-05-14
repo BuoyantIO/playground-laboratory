@@ -26,7 +26,7 @@ canary:
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.8 --reuse-values \
+  --version 1.0.9 --reuse-values \
   --set http.primary.env.ERROR_RATE=100 \
   --set http.primary.env.ERROR_CODE=503 \
   --set http.canary.env.ERROR_RATE=100 \
@@ -156,7 +156,7 @@ misleading state to leave behind):
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.8 --reuse-values \
+  --version 1.0.9 --reuse-values \
   --set http.primary.env.ERROR_RATE=0 \
   --set http.primary.env.ERROR_CODE=500 \
   --set http.canary.env.ERROR_RATE=0 \
@@ -183,7 +183,7 @@ the workload didn't.
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.8 --reset-values
+  --version 1.0.9 --reset-values
 kubectl -n playground rollout status \
   deploy/playground-server-http-primary deploy/playground-server-http-canary
 ```
