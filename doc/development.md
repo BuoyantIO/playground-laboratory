@@ -57,13 +57,24 @@ npm install            # first time only
 SERVER_URL=http://localhost:8080 npm run dev
 ```
 
-Open <http://localhost:3000>. The dashboard polls `/api/ping` every second; the Next.js dev server proxies each call to `SERVER_URL`.
+Open <http://localhost:3000>. The Next.js process pings `SERVER_URL` on its own ticker — traffic starts at boot, independently of any browser. The dashboard subscribes to the resulting sample stream over SSE (`/api/samples/stream`), so opening the page shows whatever the pod has already been doing and stays live thereafter. The polling-interval dropdown is a remote control that POSTs to `/api/config` and mutates the server ticker.
 
 If `SERVER_URL` is unset, the client falls back to the in-cluster DNS name `http://playground-server-http.playground.svc.cluster.local:8080`, which will fail outside Kubernetes.
 
+### Client env vars
+
+| Variable            | Default | Meaning                                                          |
+| ------------------- | ------- | ---------------------------------------------------------------- |
+| `SERVER_URL`        | in-cluster DNS | Upstream the ticker (and `/api/ping`) calls               |
+| `FETCH_TIMEOUT_MS`  | `0`     | Per-request timeout in ms (`0` disables)                         |
+| `POLL_INTERVAL_MS`  | `1000`  | Initial ticker cadence                                           |
+| `POLL_ENABLED`      | `true`  | If `false`, the ticker boots paused (UI dropdown still works)    |
+
+Both `POLL_INTERVAL_MS` and `POLL_ENABLED` are only consulted at process startup; further changes go through `POST /api/config` (which the UI dropdown uses).
+
 ## 3. End-to-end check
 
-With server and client both running, the dashboard should show a steady stream of `200` responses at low latency. Restart the server with `LATENCY_MS=2000` and watch the latency column climb; add `ERROR_RATE=50` and watch the success rate fall.
+With server and client both running, the dashboard should show a steady stream of `200` responses at low latency. Restart the server with `LATENCY_MS=2000` and watch the latency column climb; add `ERROR_RATE=50` and watch the success rate fall. Because the client tickers itself, you can also close the browser tab, leave it for a minute, reopen it, and see the accumulated history without any gap in traffic to the server.
 
 Run a second server instance on a different port with `APP_VERSION=v2 PORT=8081 go run ./cmd/http` to see the v1 / v2 fork light up in the topology diagram (point one client window at each).
 
@@ -99,3 +110,61 @@ docker run --rm -d --name playground-client --network playground-dev \
 ```
 
 Open <http://localhost:3000>. Tear down with `docker rm -f playground-client playground-server && docker network rm playground-dev`.
+
+## k3d (optional)
+
+Run the chart in a local cluster — matches what the runbooks target.
+
+### Prerequisites
+
+- [k3d](https://k3d.io), `kubectl`, `helm` 3
+- (optional) [Linkerd CLI](https://linkerd.io/2/getting-started/) — the chart's namespace already has `linkerd.io/inject: enabled`, so installing Linkerd into the cluster meshes everything automatically.
+
+### Spin up with published images
+
+```sh
+k3d cluster create playground
+helm install playground helm/playground
+kubectl -n playground rollout status deploy/playground-client
+```
+
+The client starts its in-pod ticker on boot (see `POLL_INTERVAL_MS` / `POLL_ENABLED` in `helm/playground/values.yaml`), so traffic is flowing through the cluster before you open a browser.
+
+### Open the dashboard
+
+```sh
+kubectl -n playground port-forward svc/playground-client 3000:3000
+```
+
+Open <http://localhost:3000>. Port-forward is just the view — closing it doesn't stop the client from generating traffic, and reopening it replays the in-memory history.
+
+### Use locally-built images
+
+After editing code, rebuild and side-load:
+
+```sh
+docker build -t playground-server:dev server/
+docker build -t playground-client:dev client/
+k3d image import playground-server:dev playground-client:dev -c playground
+
+helm upgrade --install playground helm/playground \
+  --set http.image.repository=playground-server   --set http.image.tag=dev --set http.image.pullPolicy=IfNotPresent \
+  --set client.image.repository=playground-client --set client.image.tag=dev --set client.image.pullPolicy=IfNotPresent
+```
+
+### Inject failures
+
+Edit `helm/playground/values.yaml` and `helm upgrade`, or override on the fly:
+
+```sh
+helm upgrade playground helm/playground --reuse-values \
+  --set http.primary.env.LATENCY_MS=500 \
+  --set http.primary.env.ERROR_RATE=30
+```
+
+### Tear down
+
+```sh
+helm uninstall playground
+k3d cluster delete playground
+```

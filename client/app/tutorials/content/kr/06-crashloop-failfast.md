@@ -29,7 +29,7 @@ readiness 깜빡임의 병적인 형태: 서버가 시작 시점에 크래시하
 helm uninstall demo
 helm install demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.7 \
+  --version 1.0.8 \
   --set http.primary.env.FAIL_ON_STARTUP=true \
   --set http.canary.env.FAIL_ON_STARTUP=true
 kubectl -n playground rollout status \
@@ -134,7 +134,7 @@ linkerd diagnostics proxy-metrics -n playground pod/"$POD" \
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.7 --reuse-values \
+  --version 1.0.8 --reuse-values \
   --set http.primary.env.FAIL_ON_STARTUP=false \
   --set http.canary.env.FAIL_ON_STARTUP=false
 kubectl -n playground rollout restart \
@@ -155,7 +155,7 @@ kubectl -n playground rollout status \
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.7 --reset-values
+  --version 1.0.8 --reset-values
 kubectl -n playground rollout status \
   deploy/playground-server-http-primary deploy/playground-server-http-canary
 ```

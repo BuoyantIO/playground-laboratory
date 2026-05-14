@@ -25,7 +25,7 @@ primary와 canary **양쪽** 백엔드 모두에서 응답의 100%를 503으로 
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.7 --reuse-values \
+  --version 1.0.8 --reuse-values \
   --set http.primary.env.ERROR_RATE=100 \
   --set http.primary.env.ERROR_CODE=503 \
   --set http.canary.env.ERROR_RATE=100 \
@@ -154,7 +154,7 @@ injected error 503
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.7 --reuse-values \
+  --version 1.0.8 --reuse-values \
   --set http.primary.env.ERROR_RATE=0 \
   --set http.primary.env.ERROR_CODE=500 \
   --set http.canary.env.ERROR_RATE=0 \
@@ -181,7 +181,7 @@ kubectl -n playground logs deploy/playground-server-http-primary -c server --tai
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.7 --reset-values
+  --version 1.0.8 --reset-values
 kubectl -n playground rollout status \
   deploy/playground-server-http-primary deploy/playground-server-http-canary
 ```
