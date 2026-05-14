@@ -27,7 +27,7 @@ Set the startup-failure knob (see
 helm uninstall demo
 helm install demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.6 \
+  --version 1.0.7 \
   --set http.primary.env.FAIL_ON_STARTUP=true \
   --set http.canary.env.FAIL_ON_STARTUP=true
 kubectl -n playground rollout status \
@@ -135,7 +135,7 @@ Stop crashing — on both versions:
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.6 --reuse-values \
+  --version 1.0.7 --reuse-values \
   --set http.primary.env.FAIL_ON_STARTUP=false \
   --set http.canary.env.FAIL_ON_STARTUP=false
 kubectl -n playground rollout restart \
@@ -156,7 +156,7 @@ Real-world causes worth mentioning:
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.6 --reset-values
+  --version 1.0.7 --reset-values
 kubectl -n playground rollout status \
   deploy/playground-server-http-primary deploy/playground-server-http-canary
 ```
