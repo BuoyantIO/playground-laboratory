@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { DEFAULT_POLL_INTERVAL_MS, MAX_HISTORY } from '../lib/constants';
 import type { Counters, Sample } from '../lib/types';
 
@@ -9,98 +9,97 @@ interface RuntimeConfig {
   pollEnabled: boolean;
 }
 
+const ZERO_COUNTERS: Counters = { ok: 0, fail: 0, v1: 0, v2: 0, vOther: 0 };
+
 export function usePinger() {
   const [samples, setSamples] = useState<Sample[]>([]);
+  const [counters, setCounters] = useState<Counters>(ZERO_COUNTERS);
   const [upstream, setUpstream] = useState('');
-  // Effective polling interval in ms. 0 means paused.
-  const [pollIntervalMs, setPollIntervalMs] = useState<number>(
+  const [pollIntervalMs, setPollIntervalMsState] = useState<number>(
     DEFAULT_POLL_INTERVAL_MS,
   );
-  const countersRef = useRef<Counters>({
-    ok: 0,
-    fail: 0,
-    v1: 0,
-    v2: 0,
-    vOther: 0,
-  });
 
-  // Load runtime config from /api/config on mount. POLL_INTERVAL_MS and
-  // POLL_ENABLED env vars on the Next.js pod are the source of truth for
-  // the initial value; the user can override it via the UI dropdown.
+  // Subscribe to the server-side sample stream. The Next.js pod populates this
+  // independently of any browser (see instrumentation.ts), so opening the page
+  // shows whatever the pod has been doing.
+  useEffect(() => {
+    const es = new EventSource('/api/samples/stream');
+
+    es.addEventListener('snapshot', (e) => {
+      try {
+        const data = JSON.parse((e as MessageEvent).data) as {
+          samples?: Sample[];
+          counters?: Counters;
+        };
+        if (Array.isArray(data.samples)) {
+          setSamples(data.samples.slice(0, MAX_HISTORY));
+          const firstWithUpstream = data.samples.find((s) => s.upstream);
+          if (firstWithUpstream?.upstream) setUpstream(firstWithUpstream.upstream);
+        }
+        if (data.counters) setCounters(data.counters);
+      } catch {
+        // ignore malformed payloads
+      }
+    });
+
+    es.addEventListener('sample', (e) => {
+      try {
+        const data = JSON.parse((e as MessageEvent).data) as {
+          sample?: Sample;
+          counters?: Counters;
+        };
+        if (data.sample) {
+          const incoming = data.sample;
+          setSamples((prev) => [incoming, ...prev].slice(0, MAX_HISTORY));
+          if (incoming.upstream) setUpstream(incoming.upstream);
+        }
+        if (data.counters) setCounters(data.counters);
+      } catch {
+        // ignore malformed payloads
+      }
+    });
+
+    return () => {
+      es.close();
+    };
+  }, []);
+
+  // Load the current server-side ticker config so the dropdown reflects truth.
   useEffect(() => {
     fetch('/api/config', { cache: 'no-store' })
-      .then(r => r.json())
+      .then((r) => r.json())
       .then((c: RuntimeConfig) => {
-        const enabled = c.pollEnabled !== false;
         const interval =
-          typeof c.pollIntervalMs === 'number' && c.pollIntervalMs > 0
+          typeof c.pollIntervalMs === 'number' && c.pollIntervalMs >= 0
             ? c.pollIntervalMs
             : DEFAULT_POLL_INTERVAL_MS;
-        setPollIntervalMs(enabled ? interval : 0);
+        setPollIntervalMsState(c.pollEnabled === false ? 0 : interval);
       })
       .catch(() => {
         // /api/config unreachable — keep DEFAULT_POLL_INTERVAL_MS.
       });
   }, []);
 
-  // Polling loop, restarts whenever the effective interval changes.
-  useEffect(() => {
-    if (pollIntervalMs <= 0) return;
-
-    let cancelled = false;
-
-    const tick = async () => {
-      const t0 = performance.now();
-      let sample: Sample;
-      try {
-        const res = await fetch('/api/ping', { cache: 'no-store' });
-        const data = await res.json();
-        sample = {
-          t: Date.now(),
-          status: data.status,
-          latencyMs: Math.round(performance.now() - t0),
-          body: data.body || '',
-          ok: data.ok,
-          error: data.error,
-          servedBy: data.servedBy,
-          appVersion: data.appVersion,
-          meshClientId: data.meshClientId,
-          proxyError: data.proxyError,
-        };
-        if (data.upstream) setUpstream(data.upstream);
-      } catch (e) {
-        sample = {
-          t: Date.now(),
-          status: 0,
-          latencyMs: Math.round(performance.now() - t0),
-          body: '',
-          ok: false,
-          error: String(e),
-        };
-      }
-      if (cancelled) return;
-      if (sample.ok) countersRef.current.ok++;
-      else countersRef.current.fail++;
-      if (sample.ok) {
-        if (sample.appVersion === 'v1') countersRef.current.v1++;
-        else if (sample.appVersion === 'v2') countersRef.current.v2++;
-        else countersRef.current.vOther++;
-      }
-      setSamples(prev => [sample, ...prev].slice(0, MAX_HISTORY));
-    };
-
-    tick();
-    const id = setInterval(tick, pollIntervalMs);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [pollIntervalMs]);
+  // Push interval changes to the server ticker. The UI dropdown is now a
+  // remote control, not a local timer.
+  const setPollIntervalMs = useCallback((ms: number) => {
+    setPollIntervalMsState(ms);
+    fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pollIntervalMs: ms,
+        pollEnabled: ms > 0,
+      }),
+    }).catch(() => {
+      // best-effort — UI state still reflects the user's intent
+    });
+  }, []);
 
   return {
     samples,
     upstream,
-    counters: countersRef.current,
+    counters,
     pollIntervalMs,
     setPollIntervalMs,
   };

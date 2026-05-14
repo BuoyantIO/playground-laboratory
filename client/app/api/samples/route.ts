@@ -1,12 +1,9 @@
 import { NextResponse } from 'next/server';
-import { performPing } from '../../lib/ping';
 import { samplesStore } from '../../lib/samplesStore';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET() {
-  const sample = await performPing();
-  samplesStore.record(sample);
-  return NextResponse.json(sample);
+  return NextResponse.json(samplesStore.snapshot());
 }

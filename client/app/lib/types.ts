@@ -9,6 +9,7 @@ export type Sample = {
   appVersion?: string;
   meshClientId?: string;
   proxyError?: string;
+  upstream?: string;
 };
 
 export type Counters = {
