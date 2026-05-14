@@ -19,6 +19,18 @@ type Dict = Record<string, string>;
 const en: Dict = {
   'nav.demo': 'playground demo',
   'nav.academy': 'academy ↗',
+  'nav.tutorials': 'tutorials',
+  'nav.dashboard': 'dashboard',
+
+  'tutorials.section': 'Service Mesh Academy',
+  'tutorials.listTitle': 'Tutorials',
+  'tutorials.listSubtitle':
+    'Hands-on runbooks for the playground. Each one walks through a single failure mode; what it looks like in the UI, why it happens, how to diagnose, and how to fix.',
+  'tutorials.runbook': 'Runbook',
+  'tutorials.backToList': 'Back to tutorials',
+  'tutorials.previous': 'Previous',
+  'tutorials.next': 'Next',
+  'tutorials.slides': 'Presentation slides ↗',
 
   'announcement.title': 'Get Service Mesh Certified with Buoyant.',
   'announcement.cta': 'Enroll now!',
@@ -28,7 +40,7 @@ const en: Dict = {
   'hero.titleA': 'Watch the mesh',
   'hero.titleB': 'in real time.',
   'hero.subtitle':
-    'A Next.js client polls a Go backend once a second. Inject latency, flip error rates, or crash the server — and see exactly how the mesh responds.',
+    'A Next.js client polls a Go backend once a second. Inject latency, flip error rates, or crash the server, and see exactly how the mesh responds.',
 
   'section.live': 'Live traffic',
   'section.latency': 'Latency timeline',
@@ -41,7 +53,7 @@ const en: Dict = {
 
   'polling.label': 'Polling interval',
   'polling.paused': 'Paused',
-  'polling.hintPaused': 'Paused — no requests in flight',
+  'polling.hintPaused': 'Paused; no requests in flight',
   'polling.hintActive': 'Next request in ≤ {ms} ms',
 
   'counters.lastResponse': 'Last response',
@@ -64,7 +76,7 @@ const en: Dict = {
   'chart.ago': '−{n}s',
 
   'pills.plain.title':
-    'no l5d-client-id header on response — proxy bypassed',
+    'no l5d-client-id header on response; proxy bypassed',
 
   'topology.client': 'Next.js client',
   'topology.thisBrowser': 'this browser',
@@ -88,6 +100,18 @@ const en: Dict = {
 const kr: Dict = {
   'nav.demo': '플레이그라운드 데모',
   'nav.academy': '아카데미 ↗',
+  'nav.tutorials': '튜토리얼',
+  'nav.dashboard': '대시보드',
+
+  'tutorials.section': 'Service Mesh Academy',
+  'tutorials.listTitle': '튜토리얼',
+  'tutorials.listSubtitle':
+    '플레이그라운드를 위한 실전 런북입니다. 각 런북은 하나의 장애 시나리오를 다룹니다; UI에서 어떻게 보이는지, 왜 발생하는지, 어떻게 진단하고 어떻게 고치는지.',
+  'tutorials.runbook': '런북',
+  'tutorials.backToList': '튜토리얼 목록으로',
+  'tutorials.previous': '이전',
+  'tutorials.next': '다음',
+  'tutorials.slides': '발표 슬라이드 ↗',
 
   'announcement.title': 'Buoyant과 함께 서비스 메시 인증을 받으세요.',
   'announcement.cta': '지금 등록하세요!',
@@ -97,7 +121,7 @@ const kr: Dict = {
   'hero.titleA': '메시를 관찰하세요',
   'hero.titleB': '실시간으로.',
   'hero.subtitle':
-    'Next.js 클라이언트가 1초마다 Go 백엔드를 폴링합니다. 지연을 주입하거나, 오류율을 변경하거나, 서버를 크래시시켜 — 메시가 어떻게 응답하는지 정확히 확인하세요.',
+    'Next.js 클라이언트가 1초마다 Go 백엔드를 폴링합니다. 지연을 주입하거나, 오류율을 변경하거나, 서버를 크래시시켜, 메시가 어떻게 응답하는지 정확히 확인하세요.',
 
   'section.live': '실시간 트래픽',
   'section.latency': '지연 시간 타임라인',
@@ -110,7 +134,7 @@ const kr: Dict = {
 
   'polling.label': '폴링 간격',
   'polling.paused': '일시정지',
-  'polling.hintPaused': '일시정지됨 — 진행 중인 요청 없음',
+  'polling.hintPaused': '일시정지됨; 진행 중인 요청 없음',
   'polling.hintActive': '다음 요청까지 ≤ {ms} ms',
 
   'counters.lastResponse': '마지막 응답',
@@ -133,7 +157,7 @@ const kr: Dict = {
   'chart.ago': '−{n}초',
 
   'pills.plain.title':
-    '응답에 l5d-client-id 헤더 없음 — 프록시 우회됨',
+    '응답에 l5d-client-id 헤더 없음; 프록시 우회됨',
 
   'topology.client': 'Next.js 클라이언트',
   'topology.thisBrowser': '이 브라우저',
