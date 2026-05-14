@@ -10,4 +10,12 @@ Reproducible failure modes for Linkerd Enterprise: a deliberately-breakable Go s
 | `client/`   | Next.js dashboard + in-pod traffic generator                               |
 | `helm/`     | Chart that wires server + client into a meshed `playground` namespace      |
 | `runbook/`  | Long-form failure-mode walkthroughs                                        |
-| `doc/`      | Developer docs, see [`doc/development.md`](doc/development.md)            |
+| `doc/`      | Developer docs, see [`doc/development.md`](doc/development.md)             |
+
+## Dashboard
+
+![Live dashboard showing the topology, latency chart, counters, and samples table](assets/homepage.png)
+
+## In-app tutorials
+
+![Tutorial index listing the failure-mode walkthroughs](assets/tutorials.png)
