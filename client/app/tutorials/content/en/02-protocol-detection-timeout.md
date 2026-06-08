@@ -1,10 +1,10 @@
-# 02 — Outbound protocol-detection timeout (10 s hang)
+# 02 - Outbound protocol-detection timeout (10 s hang)
 
 The outbound proxy peeks at the first bytes of every TCP stream to decide
 whether it's HTTP/1, HTTP/2 (gRPC), or opaque. If no bytes arrive within
 ~10 seconds, the proxy stops waiting, classifies the connection as
 **opaque**, and forwards the bytes as raw TCP. The connection is **not**
-closed — it's just delayed by the detection timeout.
+closed, it's just delayed by the detection timeout.
 
 This is the "server-speaks-first" / "neither side speaks" failure mode and
 it's a common gotcha for protocols like SSH, IRC, or an unusual custom
@@ -66,7 +66,7 @@ sys	0m 0.00s
 ```
 
 The full 15 s elapsed because that's what `timeout 15` killed `nc` 
-at — *not* because the proxy waited 15 s. The proxy's own timeout 
+at, *not* because the proxy waited 15 s. The proxy's own timeout 
 fired at the 10 s mark, internally.
 
 ### 3. Confirm the 10 s timeout in the client proxy log
@@ -140,12 +140,12 @@ Two real-world flavours of this failure:
 - **Server-speaks-first protocols** (SSH, IRC, custom TCP). The server
   is ready to send a banner, but it can't, because the proxy is waiting
   for the client to speak. Both sides wait. After 10 s the proxy falls
-  back to opaque and the banner finally gets through — but every new
+  back to opaque and the banner finally gets through, but every new
   connection pays the 10 s.
 - **Application is slow to send the first byte**: e.g. a thread-pool-
   starved HTTP server that's pinned and won't write the request line
   for > 10 s. The proxy gives up on HTTP, treats the stream as opaque,
-  and forwards whatever eventually comes out — but per-request route
+  and forwards whatever eventually comes out, but per-request route
   features (timeouts, retries, metrics) are gone for that connection.
 
 The fix in both cases is the same: mark the port as opaque so the proxy

@@ -3,8 +3,8 @@
 Resources:
   Deployment/playground-server-http-primary  (Go, env-tunable failure modes)
   Deployment/playground-server-http-canary   (Go, env-tunable failure modes)
-  Deployment/playground-dashboard            (Next.js UI — live flow, counters, config)
-  Deployment/playground-client               (traffic generator — pulls config, calls the server)
+  Deployment/playground-dashboard            (Next.js UI, live flow, counters, config)
+  Deployment/playground-client               (traffic generator, pulls config, calls the server)
   Service/playground-server-http             :{{ .Values.http.service.port }}  apex
   Service/playground-server-http-primary     :{{ .Values.http.service.port }}
   Service/playground-server-http-canary      :{{ .Values.http.service.port }}

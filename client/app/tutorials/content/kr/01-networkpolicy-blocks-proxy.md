@@ -1,4 +1,4 @@
-# 01 — NetworkPolicy가 인바운드 프록시 포트를 차단
+# 01 - NetworkPolicy가 인바운드 프록시 포트를 차단
 
 Linkerd 인바운드 프록시는 메시 트래픽용으로 `:4143`을, 어드민 서버용으로
 `:4191`을 사용합니다. 메시 파드를 선택하면서 `:4143`에 대한 인그레스를
@@ -75,7 +75,7 @@ EOF
 모든 것을 닫아 버렸습니다. 메시 파드의 인바운드 트래픽은 `:8080`이 아니라
 `:4143`으로 도착하기 때문입니다.
 
-> **참고 — 동일한 버그, `CiliumNetworkPolicy` 형태.** 이 클러스터는
+> **참고, 동일한 버그, `CiliumNetworkPolicy` 형태.** 이 클러스터는
 > Cilium을 사용하므로, 동일한 시나리오를 `CiliumNetworkPolicy`
 > (`cilium.io/v2`) 또는 클러스터 전역 변형인 `CiliumClusterwideNetworkPolicy`로
 > 작성할 수 있습니다. CNP는 표준 `NetworkPolicy`와 동일한 L4 포트/프로토콜
@@ -103,7 +103,7 @@ EOF
 >
 > CNP는 그 위에 ID/서비스 어카운트 셀렉터, DNS 기반 이그레스, L7 규칙
 > (`rules.http`, `rules.dns`, `rules.kafka`)을 추가합니다. 어떤 것도
-> 프록시 포트 이야기를 바꾸지는 않습니다 — 단지 `:4143`과 `:4191`을
+> 프록시 포트 이야기를 바꾸지는 않습니다, 단지 `:4143`과 `:4191`을
 > "허용" 집합에서 조용히 빼먹을 수 있는 방법이 늘어날 뿐입니다.
 > 진단과 수정은 동일합니다: 프록시 포트를 포함하세요.
 
@@ -144,7 +144,7 @@ kubectl debug -n playground "$POD" --image=nicolaka/netshoot --profile=general -
 
 목표: `:4143`이 차단되고 `:8080`은 허용되고 있다는 사실을 와이어 위에서
 입증합니다. Linkerd의 iptables 규칙이 양 끝단에 모두 깔려 있어 단순한
-프로브는 거짓말을 합니다 — 이어지는 세 절은 함정 하나와 유효한 테스트
+프로브는 거짓말을 합니다, 이어지는 세 절은 함정 하나와 유효한 테스트
 두 가지를 보여 줍니다.
 
 ```sh
@@ -170,7 +170,7 @@ TCP 트래픽을 `127.0.0.1:4140`(로컬 아웃바운드 프록시)로 리다이
 실제 서버가 아니라 자기 자신의 프록시와 핸드셰이크하고 있는 것입니다.
 Cilium과 NetworkPolicy는 전혀 호출되지 않습니다.
 
-#### 테스트 1 — 프록시 UID로 실행 (리다이렉트에서 제외)
+#### 테스트 1: 프록시 UID로 실행 (리다이렉트에서 제외)
 
 Linkerd의 `OUTPUT` 체인에는 `-m owner --uid-owner 2102 -j RETURN`이
 있어, UID `2102`(프록시)에서 나가는 트래픽은 리다이렉트를 우회합니다.
@@ -191,16 +191,16 @@ kubectl debug -n playground "$POD" \
 # nc: connect to 10.0.0.120 port 4143 (tcp) timed out: Operation in progress
 ```
 
-`Connection refused`가 아닌 `timed out` — `:4143`에 매칭되는 규칙이
+`Connection refused`가 아닌 `timed out`, `:4143`에 매칭되는 규칙이
 없으므로 Cilium의 eBPF 정책이 패킷을 조용히 떨어뜨린 것입니다.
 Calico를 iptables 모드로 사용했다면 `Connection refused`가 반환됐을
 것입니다.
 
-#### 테스트 2 — 동일한 라벨을 가진 메시 외 파드에서 프로브
+#### 테스트 2: 동일한 라벨을 가진 메시 외 파드에서 프로브
 
 이 파드에는 iptables 규칙이 없으므로 패킷이 변조 없이 나갑니다. 파드는
 `app=playground-client` 라벨을 달고 있어 정책의 `from` 절은 여전히
-매칭됩니다 — 결과를 포트 검증으로 한정합니다.
+매칭됩니다, 결과를 포트 검증으로 한정합니다.
 
 ```sh
 kubectl apply -f - <<'EOF'
@@ -222,11 +222,11 @@ spec:
 EOF
 kubectl -n playground wait --for=condition=Ready pod/netshoot --timeout=5m
 
-# :4143 — 정책이 거부, Cilium이 SYN을 떨어뜨림
+# :4143 - 정책이 거부, Cilium이 SYN을 떨어뜨림
 kubectl -n playground exec netshoot -- nc -zv -w 3 "$SERVER_IP" 4143
 # nc: connect to 10.0.0.120 port 4143 (tcp) timed out: Operation in progress
 
-# :8080 — 정책이 허용; 서버 파드의 PREROUTING이 SYN을
+# :8080 - 정책이 허용; 서버 파드의 PREROUTING이 SYN을
 # :4143으로 리다이렉트하고 인바운드 프록시가 응답한다. 앱은 보지 못한다.
 kubectl -n playground exec netshoot -- nc -zv -w 3 "$SERVER_IP" 8080
 # Connection to 10.0.0.120 8080 port [tcp/http-alt] succeeded!
@@ -236,7 +236,7 @@ kubectl -n playground delete pod netshoot
 
 참고: `:8080`의 "성공"은, PREROUTING이 서버 파드 안에서 패킷을
 `:8080`에서 `:4143`으로 리다이렉트한 뒤 *인바운드 프록시*가 핸드셰이크를
-받아준 것입니다 — 루프백 위의 애플리케이션이 받은 것이 아닙니다. 두 가지
+받아준 것입니다, 루프백 위의 애플리케이션이 받은 것이 아닙니다. 두 가지
 유효한 테스트가 일치합니다: `:4143`은 와이어에서 차단되고 있으며, 위의
 아웃바운드 프록시 로그에 보이는 `connect timed out`과 정확히 맞아떨어집니다.
 
@@ -274,12 +274,12 @@ kubectl -n playground get networkpolicy -o yaml \
 
 # 4. 메시를 완전히 우회해 앱이 정상인지 확인:
 kubectl -n playground port-forward deploy/playground-server-http-primary 18080:8080
-curl -s http://localhost:18080/   # 작동 — 파드 루프백, iptables 미경유
+curl -s http://localhost:18080/   # 작동, 파드 루프백, iptables 미경유
 
 ## 수정
 
 허용 포트에 `4143`(프록시 메트릭을 스크래핑한다면 `4191`도)을 추가합니다.
-앱 포트 `:8080`은 *전혀* 필요하지 않습니다 — 인바운드 트래픽은 결코 그
+앱 포트 `:8080`은 *전혀* 필요하지 않습니다, 인바운드 트래픽은 결코 그
 포트로 직접 도착하지 않기 때문입니다.
 
 ```sh
@@ -308,7 +308,7 @@ EOF
 ```
 
 오해를 부르는 지점: 정책에 `8080`을 추가해도 어떤 것도 고쳐지지 않지만,
-어떤 것도 깨지지 않습니다 — 단지 정책 작성자에게 *진짜* 트래픽을 허용하고
+어떤 것도 깨지지 않습니다, 단지 정책 작성자에게 *진짜* 트래픽을 허용하고
 있다는 *착각*을 줄 뿐입니다. 그래서 이 실수가 코드베이스에서 몇 달씩
 살아남곤 합니다.
 

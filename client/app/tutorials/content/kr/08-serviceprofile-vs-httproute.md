@@ -1,10 +1,10 @@
-# 08 — ServiceProfile이 HTTPRoute를 덮어씀 (조용히, 그리고 끈질기게)
+# 08 - ServiceProfile이 HTTPRoute를 덮어씀 (조용히, 그리고 끈질기게)
 
 Linkerd는 동일한 Service에 대해 두 가지 라우팅 CRD를 지원합니다:
 
-- `ServiceProfile` — 레거시 API. 라우트, 재시도 예산, 응답 분류,
+- `ServiceProfile`, 레거시 API. 라우트, 재시도 예산, 응답 분류,
   `dstOverrides`를 통한 트래픽 분할을 제공합니다.
-- `HTTPRoute` (`policy.linkerd.io` 또는 상위 Gateway API) — 최신 API.
+- `HTTPRoute` (`policy.linkerd.io` 또는 상위 Gateway API), 최신 API.
   라우트 매칭, 가중치를 가진 `backendRefs`, 타임아웃,
   `RequestHeaderModifier` 필터를 제공합니다.
 
@@ -21,8 +21,8 @@ Linkerd는 동일한 Service에 대해 두 가지 라우팅 CRD를 지원합니�
 처음 구성될 때 SP가 존재하고 routes/dstOverrides를 가지고 있었기
 때문에), 나중에 ServiceProfile을 삭제해도 사이드카가 HTTPRoute
 경로로 **전환되지 않습니다.** 사이드카는 기본(no-op) 라우트를 가진
-프로파일 경로에 그대로 머무르며, 재구성되어야만 — 실질적으로는 프록시
-재시작이 필요하다는 뜻입니다 — 상태가 바뀝니다.
+프로파일 경로에 그대로 머무르며, 재구성되어야만, 실질적으로는 프록시
+재시작이 필요하다는 뜻입니다, 상태가 바뀝니다.
 
 이 런북은 정상 상태에서의 우선순위 동작과 삭제 이후의 끈질긴 동작을
 모두 다룹니다. 차트가 배포하는 두 가지 서버 버전
@@ -109,7 +109,7 @@ kubectl -n playground debug "$POD" \
 ServiceProfile이 적용된 상태입니다. 내부 동작은 다음과 같습니다: 이
 시점에 클라이언트의 `playground-server-http`에 대한 아웃바운드 사이드카가
 구성되어 있고 (프록시 시작 시점에, 혹은 그 이전에 SP가 이미 존재한
-상태에서 구성됨), **ServiceProfile 경로**에 있습니다 — 프록시는
+상태에서 구성됨), **ServiceProfile 경로**에 있습니다, 프록시는
 프로파일 receiver를 관찰하면서 `dstOverrides`를 적용합니다.
 
 정책 측에서 확인하려면:
@@ -303,12 +303,12 @@ kubectl port-forward -n playground deploy/playground-client 4191
 curl -v --data 'linkerd=debug' -X PUT localhost:4191/proxy-log-level
 
 kubectl -n playground logs deploy/playground-client -c linkerd-proxy \
-  | grep -E 'Using ServiceProfile|Using ClientPolicy'
+  | grep -E 'Using ServiceProfile|Using ClientPolicy routes'
 
 # 4. ServiceProfile을 이미 삭제했는데도 트래픽이 여전히 Symptom B (끈질긴
 #    동작)처럼 보인다면, 프록시가 결정을 재평가했는지 확인하세요:
 kubectl -n playground logs deploy/playground-client -c linkerd-proxy --since=5m \
-  | grep -E 'Using ServiceProfile|Using ClientPolicy'
+  | grep -E 'Using ServiceProfile|Using ClientPolicy routes'
 # 해당 대상에 대한 가장 최근 라인이 여전히 "Using ServiceProfile"이라면,
 # 사이드카가 재구성되지 않은 것입니다. 클라이언트를 롤하세요.
 ```

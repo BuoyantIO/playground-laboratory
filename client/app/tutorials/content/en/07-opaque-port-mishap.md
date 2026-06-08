@@ -1,8 +1,8 @@
-# 08 — HTTP port mis-marked opaque silently disables routing
+# 08 - HTTP port mis-marked opaque silently disables routing
 
 Linkerd's protocol detection looks at the first few bytes of each connection
 and decides whether to treat it as HTTP/1, HTTP/2 (gRPC), or opaque TCP. You
-can override this with the `config.linkerd.io/opaque-ports` annotation —
+can override this with the `config.linkerd.io/opaque-ports` annotation,
 useful for server-speaks-first protocols (MySQL, SMTP, etc.), but with
 **serious consequences if you mark an HTTP/gRPC port as opaque** and rely on
 HTTPRoutes for progressive rollout with Argo, Layer 7 metrics,
@@ -34,7 +34,7 @@ UI before proceeding.
 ## Symptom
 
 - Client UI: status code stays `200`, latency normal.
-- **mTLS badge flips to `plain`** — but this is a playground-specific
+- **mTLS badge flips to `plain`**: but this is a playground-specific
   signal (the server reads `l5d-client-id`); in a typical workload the
   badge equivalent would stay green and the failure would be silent.
 - Outbound `request_total{authority="playground-server-http..."}` stops
@@ -51,11 +51,11 @@ is the whole point of this runbook.
 |---|---|---|
 | **Workload pod template** (`spec.template.metadata.annotations`) | The proxy-injector at admission time. Becomes `LINKERD2_PROXY_INBOUND_PORTS_DISABLE_PROTOCOL_DETECTION` on the injected sidecar. | Only the **server's inbound** proxy. The server stops parsing HTTP for that port: no `l5d-client-id` header injected, no `inbound_http_request_total`, inbound HTTPRoute/AuthorizationPolicy at the HTTP layer bypassed. **Outbound callers are unaffected** unless they resolve directly to the pod IP (unusual for Service-FQDN traffic). |
 | **Service** (`metadata.annotations`) | The destination controller, which publishes the result in the outbound policy (`protocol.Kind: Opaque`). | All **outbound callers** of that Service. Outbound proxies skip HTTP detection and route bytes through the opaque path: no `request_total` for that authority, Service-attached HTTPRoute and outbound HTTP-layer policy bypassed. The server's inbound proxy is unaffected unless its *own* annotation says otherwise. |
-| **Namespace** | The proxy-injector at admission time, as a default for pods that don't set the annotation themselves. | Cascades **only to pods** in the namespace — same effect as the pod-template row above for every pod that doesn't override. **Services do not inherit it**: the destination controller reads each Service's own annotations and falls back to the cluster-wide `--default-opaque-ports` flag, never the namespace. |
+| **Namespace** | The proxy-injector at admission time, as a default for pods that don't set the annotation themselves. | Cascades **only to pods** in the namespace, same effect as the pod-template row above for every pod that doesn't override. **Services do not inherit it**: the destination controller reads each Service's own annotations and falls back to the cluster-wide `--default-opaque-ports` flag, never the namespace. |
 
 A common problem: teams annotate their **pod** to mark a server-speaks-first
 port opaque but never touch the **Service**. Outbound callers carry on
-parsing HTTP, their dashboards still show per-route metrics — but the
+parsing HTTP, their dashboards still show per-route metrics, but the
 server-side HTTPRoute author can't get their rules to fire, and the platform
 team's AuthorizationPolicy quietly no-ops. The reverse is just as common:
 someone annotates the **Service** for an HTTP port "to disable detection for
@@ -172,7 +172,7 @@ it stays at 1 thanks to HTTP/1 keepalive on the application side.
 **What you see in the UI**:
 
 - Status code stays `200`, latency normal.
-- mTLS badge **stays green** — the server's inbound proxy is still in HTTP
+- mTLS badge **stays green**: the server's inbound proxy is still in HTTP
   mode (no pod annotation), so it still injects `l5d-client-id`, which the
   app surfaces as `X-Mesh-Client-Id`.
 
@@ -238,7 +238,7 @@ learn the port is opaque.
 
 Annotate both backends. Each pod's inbound proxy independently decides
 based on its own annotation, so leaving one in HTTP mode would produce
-inconsistent behavior across endpoints — half the requests would still be
+inconsistent behavior across endpoints, half the requests would still be
 parsed as HTTP server-side:
 
 ```sh
@@ -325,16 +325,16 @@ held when the annotation took effect.
 
 Each proxy decides whether to parse HTTP from two inputs:
 
-1. **Local config** — the injector reads the workload's annotations
+1. **Local config**: the injector reads the workload's annotations
    (falling back to the namespace's annotations) and sets
    `LINKERD2_PROXY_INBOUND_PORTS_DISABLE_PROTOCOL_DETECTION` on the
    sidecar
    ([linkerd/app/src/env.rs:192-193](../../buoyant/buoyant-proxy/linkerd/app/src/env.rs)).
    This is the **inbound** proxy's source of truth for "is this port
    opaque?".
-2. **Discovery** — the outbound proxy queries the destination controller,
+2. **Discovery**: the outbound proxy queries the destination controller,
    which reads each Service's own annotation (with a cluster-wide fallback
-   from the destination controller's `--default-opaque-ports` flag — *not*
+   from the destination controller's `--default-opaque-ports` flag, *not*
    the namespace) and publishes `protocol.Kind: Opaque` or `Detect` per
    Service+port.
 
@@ -342,22 +342,22 @@ When a port is opaque, the proxy on that side:
 
 - Skips HTTP protocol detection.
 - Routes bytes as TCP, end-to-end.
-- Emits TCP-only metrics — no HTTP `request_total` series is ever created
+- Emits TCP-only metrics, no HTTP `request_total` series is ever created
   for that destination.
 - Bypasses HTTPRoute and HTTP-layer AuthorizationPolicy (those CRDs attach
   to HTTP traffic).
 
-mTLS itself is unaffected — it sits below the HTTP layer. The proxies
+mTLS itself is unaffected, it sits below the HTTP layer. The proxies
 still negotiate TLS at connection time and the `tls="true"` label remains
 on `tcp_open_total`. But anything that depends on HTTP-layer plumbing
 (routes, retries, the `l5d-client-id` header, per-route metrics) is gone
 for the side that was switched to opaque. If only one side was switched,
-that side's HTTP plumbing is gone while the other's still works — which is
+that side's HTTP plumbing is gone while the other's still works, which is
 the most common debugging trap.
 
 Policy updates from the destination controller are pushed to outbound
 proxies in near-real-time, but **existing connections keep their original
-protocol decision** — the proxy doesn't tear down live HTTP/2 channels to
+protocol decision**: the proxy doesn't tear down live HTTP/2 channels to
 re-decide. A `kubectl rollout restart` on the caller forces fresh
 connections under the new policy.
 
@@ -371,7 +371,7 @@ linkerd diagnostics policy -n playground svc/playground-server-http 8080 \
 # `protocol.Kind: Detect: { http1, http2 }` = HTTP path, healthy.
 # `protocol.Kind: Opaque: { ... }`           = the port has been marked opaque.
 
-# 2. Where did "opaque" come from — pod, Service, or namespace?
+# 2. Where did "opaque" come from - pod, Service, or namespace?
 kubectl -n playground get pod -l app=playground-server-http \
   -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.annotations.config\.linkerd\.io/opaque-ports}{"\n"}{end}'
 kubectl -n playground get svc playground-server-http \

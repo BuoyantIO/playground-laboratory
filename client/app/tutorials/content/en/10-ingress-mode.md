@@ -32,8 +32,8 @@ There are two fixes, and which one you use depends on the controller:
 - **Ingress mode** (`linkerd.io/inject: ingress`). For controllers you
   can't point at a ClusterIP (Traefik, Kong, Contour, Gloo, HAProxy, GCE,
   EnRoute), the proxy ignores the original destination IP and instead routes
-  on the `l5d-dst-override` header (falling back to `Host` / `:authority`),
-  so a pod-IP connection still re-resolves to the logical Service. You set
+  on the `l5d-dst-override` header, so a pod-IP connection still re-resolves
+  to the logical Service. You set
   that header with a controller-specific mechanism (a Traefik `Middleware`,
   an nginx snippet, …) and you **must strip any client-supplied
   `l5d-dst-override`** to avoid turning the ingress into an open relay.
@@ -461,9 +461,9 @@ The two fixes attack different ends of the same connection:
   the first bullet applies again. Normal injection, nothing special on the
   proxy.
 - **Ingress mode** changes the **proxy**: ignore the original dst IP and
-  resolve the logical Service from the `l5d-dst-override` / `Host` /
-  `:authority` header instead. The controller can keep dialing pod IPs; the
-  proxy re-resolves to the Service anyway.
+  resolve the logical Service from the `l5d-dst-override` header instead (or
+  the original destination if that header is absent). The controller can keep
+  dialing pod IPs; the proxy re-resolves to the Service anyway.
 
 **Security.** In ingress mode the proxy routes wherever `l5d-dst-override`
 says. If an external client can set that header, they can make your ingress

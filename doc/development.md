@@ -1,7 +1,7 @@
 # Local development
 
 Run the server, the dashboard, and the traffic generator directly on your
-machine — no cluster required.
+machine, no cluster required.
 
 ## Prerequisites
 
@@ -11,7 +11,7 @@ machine — no cluster required.
 
 ## 1. Run the server
 
-The server is now laid out for multiple binaries (HTTP today, gRPC later) — the entrypoint lives under `cmd/http/`:
+The server is now laid out for multiple binaries (HTTP today, gRPC later), the entrypoint lives under `cmd/http/`:
 
 ```sh
 cd server
@@ -37,12 +37,12 @@ LATENCY_MS=500 LATENCY_JITTER_MS=200 ERROR_RATE=30 ERROR_CODE=503 go run ./cmd/h
 | ---------------------- | ------- | ----------------------------------------- |
 | `PORT`                 | `8080`  | Listen port                               |
 | `RESPONSE_TEXT`        | `test`  | Body returned on success                  |
-| `APP_VERSION`          | `v1`    | Echoed back as `X-App-Version` (used by the dashboard's fork visualization — set `v2` to simulate the canary) |
+| `APP_VERSION`          | `v1`    | Echoed back as `X-App-Version` (used by the dashboard's fork visualization, set `v2` to simulate the canary) |
 | `LATENCY_MS`           | `0`     | Fixed sleep before responding (ms)        |
 | `LATENCY_JITTER_MS`    | `0`     | Random extra latency `[0, jitter)` (ms)   |
 | `ERROR_RATE`           | `0`     | Percent (0–100) of requests that fail     |
 | `ERROR_CODE`           | `500`   | Status code returned when failing         |
-| `FAIL_ON_STARTUP`      | `false` | Exit immediately — simulates crash loop   |
+| `FAIL_ON_STARTUP`      | `false` | Exit immediately, simulates crash loop   |
 | `CRASH_AFTER_REQUESTS` | `0`     | Exit after N requests (0 = never)         |
 | `READINESS_FAIL_RATE`  | `0`     | Percent of `/healthz` probes that fail    |
 
@@ -80,7 +80,7 @@ DASHBOARD_URL=http://localhost:3000 SERVER_URL=http://localhost:8080 \
 
 The dashboard now shows a live flow. Change the interval, concurrency, target,
 or headers in the UI and the generator adopts them within ~2s (`CONFIG_POLL_MS`).
-Kill the dashboard and the generator keeps calling the server — it just can't
+Kill the dashboard and the generator keeps calling the server, it just can't
 push samples until the dashboard returns.
 
 ### Generator env vars
@@ -118,7 +118,7 @@ without any gap in traffic.
 
 To see the v1 / v2 fork light up, run a second server with
 `APP_VERSION=v2 PORT=8081 go run ./cmd/http` and set the dashboard target to
-**custom** with `http://localhost:8081` — or just use k3d, where the chart
+**custom** with `http://localhost:8081`, or just use k3d, where the chart
 deploys the primary/canary roles behind the apex Service.
 
 ## Docker (optional)
@@ -165,12 +165,12 @@ Open <http://localhost:3000>. Tear down with `docker rm -f playground-client pla
 
 ## k3d (optional)
 
-Run the chart in a local cluster — matches what the runbooks target.
+Run the chart in a local cluster, matches what the runbooks target.
 
 ### Prerequisites
 
 - [k3d](https://k3d.io), `kubectl`, `helm` 3
-- (optional) [Linkerd CLI](https://linkerd.io/2/getting-started/) — the chart's namespace already has `linkerd.io/inject: enabled`, so installing Linkerd into the cluster meshes everything automatically.
+- (optional) [Linkerd CLI](https://linkerd.io/2/getting-started/), the chart's namespace already has `linkerd.io/inject: enabled`, so installing Linkerd into the cluster meshes everything automatically.
 
 ### Spin up with published images
 
@@ -190,7 +190,7 @@ pushing samples to the dashboard, so traffic is flowing before you open a browse
 kubectl -n playground port-forward svc/playground-dashboard 3000:3000
 ```
 
-Open <http://localhost:3000>. Port-forward is just the view — closing it doesn't stop the generator, and reopening it replays the dashboard's in-memory history.
+Open <http://localhost:3000>. Port-forward is just the view, closing it doesn't stop the generator, and reopening it replays the dashboard's in-memory history.
 
 ### Use locally-built images
 

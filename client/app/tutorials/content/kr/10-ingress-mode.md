@@ -34,8 +34,8 @@ mTLS는 여전히 동작합니다. mTLS는 L7 아래 계층에 있고, destinati
 - **Ingress mode**(`linkerd.io/inject: ingress`). ClusterIP를 향하게
   만들 수 없는 컨트롤러(Traefik, Kong, Contour, Gloo, HAProxy, GCE,
   EnRoute)의 경우, 프록시가 원래 목적지 IP를 무시하고 대신
-  `l5d-dst-override` 헤더(없으면 `Host` / `:authority`)를 기준으로
-  라우팅합니다. 그래서 Pod IP를 향한 연결이라도 논리적 Service로 다시
+  `l5d-dst-override` 헤더를 기준으로 라우팅합니다(없으면 원래 목적지로).
+  그래서 Pod IP를 향한 연결이라도 논리적 Service로 다시
   resolve됩니다. 이 헤더는 컨트롤러별 메커니즘(Traefik `Middleware`,
   nginx snippet 등)으로 설정하며, ingress를 open relay로 만들지 않도록
   **클라이언트가 보낸 `l5d-dst-override`를 반드시 제거해야 합니다.**
@@ -472,8 +472,8 @@ ingress 컨트롤러는 기본적으로 두 번째 경로를 택합니다. Servi
   연결하게 만들면 위의 첫 번째 항목이 다시 적용됩니다. 일반 주입이며
   프록시 쪽에는 특별한 설정이 없습니다.
 - **Ingress mode**는 **프록시**를 바꿉니다. 원래 dst IP를 무시하고
-  대신 `l5d-dst-override` / `Host` / `:authority` 헤더에서 논리적
-  Service를 resolve합니다. 컨트롤러는 계속 Pod IP로 연결해도 되고,
+  대신 `l5d-dst-override` 헤더에서 논리적 Service를 resolve합니다(해당
+  헤더가 없으면 원래 목적지). 컨트롤러는 계속 Pod IP로 연결해도 되고,
   프록시가 어쨌든 Service로 다시 resolve합니다.
 
 **보안.** ingress mode에서 프록시는 `l5d-dst-override`가 가리키는

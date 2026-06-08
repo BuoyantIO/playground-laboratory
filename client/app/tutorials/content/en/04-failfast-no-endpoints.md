@@ -1,11 +1,11 @@
-# 04 — `504` failfast: no ready endpoints
+# 04 - `504` failfast: no ready endpoints
 
 The classic "scaled to zero" demo. When the destination Service has zero ready
 endpoints, the outbound load balancer enters **failfast**: requests fail
 immediately with a `504` instead of buffering indefinitely.
 
 This is the most-misdiagnosed Linkerd error in the wild. It looks like a
-timeout, but the proxy isn't waiting on the server — it's waiting for an
+timeout, but the proxy isn't waiting on the server, it's waiting for an
 endpoint to *exist*. This runbook is the canonical example.
 
 > This error can also be caused by networking issues that prevent the
@@ -22,14 +22,14 @@ UI before proceeding.
 ## Symptom
 
 - Client UI: every poll flips to red `504` within ~3 s.
-- Latency drops to a flat ~3000 ms — the proxy is short-circuiting, not
+- Latency drops to a flat ~3000 ms, the proxy is short-circuiting, not
   actually waiting on the server.
 - The "mTLS" badge stays red/empty (no response to wrap), but importantly the
-  topology banner turns red — the proxy is failing the call.
+  topology banner turns red, the proxy is failing the call.
 
 ## Recreate
 
-Scale **both** the primary and canary deployments to zero — leaving the
+Scale **both** the primary and canary deployments to zero, leaving the
 canary running would let kube-proxy keep routing successfully to it:
 
 ```sh
@@ -103,7 +103,7 @@ The outbound load balancer wraps each destination in a queue with a failfast
 timeout:
 
 > When the balancer has no available inner services, it goes into "failfast"
-> — subsequent requests fail immediately rather than buffering indefinitely.
+>, subsequent requests fail immediately rather than buffering indefinitely.
 
 The default outbound HTTP failfast timeout is **3 seconds**, set by the
 `DEFAULT_OUTBOUND_HTTP_FAILFAST_TIMEOUT` constant in the proxy. 
@@ -126,7 +126,7 @@ kubectl -n playground get pods -l app=playground-server-http
 kubectl -n playground exec deploy/playground-client -c linkerd-proxy -- \
   curl -s http://localhost:4191/metrics \
   | grep -E 'failfast|endpoints'
-# in_failfast=1, endpoints=0.
+# outbound_http_errors_total{...,error="failfast"} climbing; balancer endpoints (ready) = 0.
 
 # 4. The 504 duration is ~3000ms (failfast default), not a multiple of
 # server latency. That's the giveaway over a real timeout.

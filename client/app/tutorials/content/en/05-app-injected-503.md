@@ -1,7 +1,7 @@
-# 05 — App-injected `503` (not a mesh problem)
+# 05 - App-injected `503` (not a mesh problem)
 
 The most common false positive in mesh debugging: a 503 that came from the
-**application**, not the mesh. This runbook is the diagnostic baseline —
+**application**, not the mesh. This runbook is the diagnostic baseline,
 once you can spot an app-generated error vs. a proxy-synthesised one, every
 subsequent runbook becomes "compare to this".
 
@@ -20,7 +20,7 @@ UI before proceeding.
 ## Recreate
 
 Flip 100% of responses to 503 on **both** the primary and canary backends
-via helm — otherwise kube-proxy keeps half the requests hitting a healthy
+via helm, otherwise kube-proxy keeps half the requests hitting a healthy
 canary:
 
 ```sh
@@ -37,7 +37,7 @@ kubectl -n playground rollout status \
 
 ## What you'll see
 
-Server application logs — the **only** place the 503 appears as a deliberate
+Server application logs, the **only** place the 503 appears as a deliberate
 event:
 
 ```sh
@@ -45,11 +45,11 @@ kubectl -n playground logs deploy/playground-server-http-primary -c server --tai
 ```
 
 ```
-2026/05/14 04:53:33 503 Service Unavailable — request 1, version=v1, latency 0ms, client-id="playground-client.playground.serviceaccount.identity.linkerd.cluster.local"
-2026/05/14 04:53:34 503 Service Unavailable — request 2, version=v1, latency 0ms, client-id="playground-client.playground.serviceaccount.identity.linkerd.cluster.local"
+2026/05/14 04:53:33 503 Service Unavailable, request 1, version=v1, latency 0ms, client-id="playground-client.playground.serviceaccount.identity.linkerd.cluster.local"
+2026/05/14 04:53:34 503 Service Unavailable, request 2, version=v1, latency 0ms, client-id="playground-client.playground.serviceaccount.identity.linkerd.cluster.local"
 ```
 
-Note `client-id="playground-client.playground..."` — mTLS is working, the
+Note `client-id="playground-client.playground..."`, mTLS is working, the
 proxy intercepted the request and forwarded the verified caller identity.
 That's the visual cue this isn't a mesh problem.
 
@@ -129,7 +129,7 @@ The "is it the app or the mesh?" decision tree:
 
    ```sh
    linkerd diagnostics proxy-metrics -n playground deploy/playground-client \
-     | grep -E '^response_total|^outbound_http_balancer_in_failfast' \
+     | grep -E '^response_total|^outbound_http_errors_total' \
      | grep -v ' 0$' | head
    ```
 
@@ -148,7 +148,7 @@ The "is it the app or the mesh?" decision tree:
 ## Fix
 
 Switch off the fault injection on both versions. Reset **both** knobs back
-to defaults — leaving `ERROR_CODE=503` sticky from the Recreate step would
+to defaults, leaving `ERROR_CODE=503` sticky from the Recreate step would
 have the server log read `errorRate=0% errorCode=503` after the upgrade
 (harmless because `errorRate=0` short-circuits the injection, but
 misleading state to leave behind):
@@ -172,10 +172,10 @@ kubectl -n playground logs deploy/playground-server-http-primary -c server --tai
 ```
 
 ```
-2026/05/14 04:56:43 server listening :8080 — version=v1 response="hello from primary" latency=0ms+0ms errorRate=0% errorCode=500
+2026/05/14 04:56:43 server listening :8080, version=v1 response="hello from primary" latency=0ms+0ms errorRate=0% errorCode=500
 ```
 
-In a real environment the fix is a workload deploy — the mesh did its job;
+In a real environment the fix is a workload deploy, the mesh did its job;
 the workload didn't.
 
 ## Revert

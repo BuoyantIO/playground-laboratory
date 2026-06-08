@@ -1,4 +1,4 @@
-# 00 — 클러스터 + Linkerd Enterprise 설치
+# 00 - 클러스터 + Linkerd Enterprise 설치
 
 이 디렉터리의 모든 런북은 Linkerd Enterprise(BEL)가 설치되고 플레이그라운드 랩이
 배포된 새 k3d 클러스터에서 시작합니다. 이 파일은 정식 가이드이며, 다른 모든

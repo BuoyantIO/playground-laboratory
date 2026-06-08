@@ -99,6 +99,20 @@ const en: Dict = {
   'pills.plain.title':
     'no l5d-client-id header on response; proxy bypassed',
 
+  'code.apply': 'Apply',
+  'code.copy': 'Copy command',
+  'code.copied': 'Copied!',
+
+  'panel.title': 'Tutorial',
+  'panel.select': 'Select tutorial',
+  'panel.collapse': 'Collapse panel',
+  'panel.open': 'Tutorials',
+  'panel.loading': 'Loading…',
+  'panel.failed': 'Failed to load tutorial.',
+
+  'controls.open': 'Controls',
+  'controls.collapse': 'Collapse controls',
+
   'topology.client': 'Next.js client',
   'topology.thisBrowser': 'this browser',
   'topology.generator': 'Traffic generator',
@@ -206,6 +220,20 @@ const kr: Dict = {
 
   'pills.plain.title':
     '응답에 l5d-client-id 헤더 없음; 프록시 우회됨',
+
+  'code.apply': '적용',
+  'code.copy': '명령 복사',
+  'code.copied': '복사됨!',
+
+  'panel.title': '튜토리얼',
+  'panel.select': '튜토리얼 선택',
+  'panel.collapse': '패널 접기',
+  'panel.open': '튜토리얼',
+  'panel.loading': '불러오는 중…',
+  'panel.failed': '튜토리얼을 불러오지 못했습니다.',
+
+  'controls.open': '컨트롤',
+  'controls.collapse': '컨트롤 접기',
 
   'topology.client': 'Next.js 클라이언트',
   'topology.thisBrowser': '이 브라우저',

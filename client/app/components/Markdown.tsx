@@ -1,7 +1,10 @@
 'use client';
 
+import { useState, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useTranslation } from '../lib/i18n';
+import { CheckIcon, CopyIcon } from './Icons';
 
 interface MarkdownProps {
   content: string;
@@ -98,14 +101,7 @@ export function Markdown({ content }: MarkdownProps) {
               </code>
             );
           },
-          pre: ({ children, ...props }) => (
-            <pre
-              className="my-5 overflow-x-auto rounded-card border border-navy-10 bg-navy px-4 py-4 font-mono text-[13px] leading-relaxed text-electric"
-              {...props}
-            >
-              {children}
-            </pre>
-          ),
+          pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
           strong: props => (
             <strong className="font-semibold text-navy" {...props} />
           ),
@@ -113,6 +109,84 @@ export function Markdown({ content }: MarkdownProps) {
       >
         {content}
       </ReactMarkdown>
+    </div>
+  );
+}
+
+// Recursively flatten the text content of a rendered node (the raw command text).
+function extractText(node: ReactNode): string {
+  if (node == null || typeof node === 'boolean') return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractText).join('');
+  const el = node as { props?: { children?: ReactNode } };
+  if (el.props?.children !== undefined) return extractText(el.props.children);
+  return '';
+}
+
+// Copies the command to the clipboard so you can paste & run it.
+function CopyButton({ text }: { text: string }) {
+  const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Fallback for non-secure contexts.
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+      } catch {
+        /* give up silently */
+      }
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
+  };
+
+  const label = copied ? t('code.copied') : t('code.copy');
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      aria-label={label}
+      title={label}
+      className="absolute right-2 top-2 rounded-md border border-white/20 bg-white/10 p-1.5 text-electric transition hover:bg-white/20"
+    >
+      {copied ? (
+        <CheckIcon className="h-4 w-4" />
+      ) : (
+        <CopyIcon className="h-4 w-4" />
+      )}
+    </button>
+  );
+}
+
+// Renders a fenced code block. Command/manifest blocks (```sh, ```yaml, …) get
+// an Apply button; plain output blocks (no language) do not.
+function CodeBlock({ children }: { children: ReactNode }) {
+  const codeEl = (Array.isArray(children) ? children[0] : children) as
+    | { props?: { className?: string } }
+    | undefined;
+  const isCommand = (codeEl?.props?.className ?? '').startsWith('language-');
+  const text = extractText(children).replace(/\n+$/, '');
+
+  return (
+    <div className="group relative my-5">
+      <pre
+        className={`overflow-x-auto rounded-card border border-navy-10 bg-navy px-4 py-4 font-mono text-[13px] leading-relaxed text-electric ${
+          isCommand ? 'pr-12' : ''
+        }`}
+      >
+        {children}
+      </pre>
+      {isCommand && <CopyButton text={text} />}
     </div>
   );
 }

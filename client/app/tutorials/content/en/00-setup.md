@@ -1,4 +1,4 @@
-# 00 — Cluster + Linkerd Enterprise setup
+# 00 - Cluster + Linkerd Enterprise setup
 
 Every runbook in this directory starts from a fresh k3d cluster with Linkerd
 Enterprise (BEL) installed and the playground laboratory deployed. This file
@@ -72,8 +72,8 @@ kubectl -n playground rollout status \
 
 The `playground` namespace is annotated `linkerd.io/inject: enabled`, so all
 four deployments come up with a `linkerd-proxy` sidecar. **`playground-client`**
-is the always-on traffic generator — the meshed caller every runbook
-instruments — and **`playground-dashboard`** is the UI that shows its flow and
+is the always-on traffic generator, the meshed caller every runbook
+instruments, and **`playground-dashboard`** is the UI that shows its flow and
 owns the live config the generator pulls.
 
 ## 4. Open the dashboard
@@ -144,7 +144,7 @@ kubectl -n playground rollout status \
 ```
 
 If a runbook leaves the cluster wedged (e.g. trust anchor mismatch), tear
-down and start over — that's faster than untangling:
+down and start over, that's faster than untangling:
 
 ```sh
 k3d cluster delete playground

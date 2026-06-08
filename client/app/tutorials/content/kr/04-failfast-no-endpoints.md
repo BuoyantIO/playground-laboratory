@@ -1,11 +1,11 @@
-# 04 — `504` failfast: 준비된 엔드포인트 없음
+# 04 - `504` failfast: 준비된 엔드포인트 없음
 
 전형적인 "0개로 스케일 다운" 데모입니다. 목적지 Service에 준비된
 엔드포인트가 0개일 때, 아웃바운드 로드 밸런서는 **failfast** 상태로
 들어갑니다. 요청은 무한정 버퍼링되는 대신 즉시 `504`로 실패합니다.
 
 이는 현장에서 가장 자주 오진단되는 Linkerd 오류입니다. 타임아웃처럼
-보이지만, 프록시는 서버를 기다리는 게 아니라 — 엔드포인트가 *존재*하기를
+보이지만, 프록시는 서버를 기다리는 게 아니라, 엔드포인트가 *존재*하기를
 기다리는 것입니다. 이 런북이 그 정식 예시입니다.
 
 > 이 오류는 클라이언트와 서버 프록시 사이의 TLS 연결이
@@ -21,15 +21,15 @@
 ## 증상
 
 - 클라이언트 UI: 모든 폴링이 ~3초 내에 빨간 `504`로 바뀝니다.
-- 지연 시간이 평탄한 ~3000 ms로 떨어집니다 — 프록시가 서버를 실제로
+- 지연 시간이 평탄한 ~3000 ms로 떨어집니다, 프록시가 서버를 실제로
   기다리는 게 아니라 단락(short-circuit)시키고 있기 때문입니다.
 - "mTLS" 배지는 빨강/공백으로 유지됩니다(감쌀 응답이 없음). 다만 중요한
-  것은 토폴로지 배너가 빨개진다는 점입니다 — 프록시가 호출을 실패시키고
+  것은 토폴로지 배너가 빨개진다는 점입니다, 프록시가 호출을 실패시키고
   있다는 뜻입니다.
 
 ## 재현
 
-primary와 canary 디플로이먼트를 **모두** 0으로 스케일합니다 — canary를
+primary와 canary 디플로이먼트를 **모두** 0으로 스케일합니다, canary를
 남겨 두면 kube-proxy가 그쪽으로 계속 라우팅해 성공시키게 됩니다.
 
 ```sh
@@ -126,7 +126,7 @@ kubectl -n playground get pods -l app=playground-server-http
 kubectl -n playground exec deploy/playground-client -c linkerd-proxy -- \
   curl -s http://localhost:4191/metrics \
   | grep -E 'failfast|endpoints'
-# in_failfast=1, endpoints=0.
+# outbound_http_errors_total{...,error="failfast"} 증가; balancer endpoints (ready) = 0.
 
 # 4. 504 지속 시간이 ~3000ms(failfast 기본값)이며 서버 지연의 배수가 아니다.
 # 그것이 진짜 타임아웃과 구별되는 단서다.

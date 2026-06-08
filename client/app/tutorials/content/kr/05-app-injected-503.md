@@ -1,7 +1,7 @@
-# 05 — 앱이 주입한 `503` (메시 문제가 아님)
+# 05 - 앱이 주입한 `503` (메시 문제가 아님)
 
 메시 디버깅에서 가장 흔한 거짓 양성: **애플리케이션**에서 발생한 503을
-메시 문제로 오해하는 경우입니다. 이 런북은 진단의 기준선입니다 — 한 번
+메시 문제로 오해하는 경우입니다. 이 런북은 진단의 기준선입니다, 한 번
 앱이 만든 오류와 프록시가 합성한 오류를 구분할 수 있게 되면, 이후 모든
 런북이 "이것과 비교하라"가 됩니다.
 
@@ -19,7 +19,7 @@
 
 ## 재현
 
-primary와 canary **양쪽** 백엔드 모두에서 응답의 100%를 503으로 뒤집습니다 —
+primary와 canary **양쪽** 백엔드 모두에서 응답의 100%를 503으로 뒤집습니다,
 그렇지 않으면 kube-proxy가 절반의 요청을 정상 canary에 그대로 보냅니다.
 
 ```sh
@@ -36,18 +36,18 @@ kubectl -n playground rollout status \
 
 ## 무엇이 보일까
 
-서버 애플리케이션 로그 — 503이 의도된 이벤트로 나타나는 **유일한** 곳:
+서버 애플리케이션 로그, 503이 의도된 이벤트로 나타나는 **유일한** 곳:
 
 ```sh
 kubectl -n playground logs deploy/playground-server-http-primary -c server --tail=20
 ```
 
 ```
-2026/05/14 04:53:33 503 Service Unavailable — request 1, version=v1, latency 0ms, client-id="playground-client.playground.serviceaccount.identity.linkerd.cluster.local"
-2026/05/14 04:53:34 503 Service Unavailable — request 2, version=v1, latency 0ms, client-id="playground-client.playground.serviceaccount.identity.linkerd.cluster.local"
+2026/05/14 04:53:33 503 Service Unavailable, request 1, version=v1, latency 0ms, client-id="playground-client.playground.serviceaccount.identity.linkerd.cluster.local"
+2026/05/14 04:53:34 503 Service Unavailable, request 2, version=v1, latency 0ms, client-id="playground-client.playground.serviceaccount.identity.linkerd.cluster.local"
 ```
 
-`client-id="playground-client.playground..."`에 주목하세요 — mTLS는 정상
+`client-id="playground-client.playground..."`에 주목하세요, mTLS는 정상
 동작 중이고, 프록시가 요청을 가로채 검증된 호출자 ID를 전달했습니다.
 이것이 메시 문제가 아니라는 시각적 단서입니다.
 
@@ -92,7 +92,7 @@ injected error 503
 ## 왜 이런 일이 일어나는가
 
 이것은 프록시가 만든 응답이 아닙니다. 프록시는 *자신*이 실패할 때만
-오류 응답을 합성합니다 — connect refused, failfast, ID 불일치 등.
+오류 응답을 합성합니다, connect refused, failfast, ID 불일치 등.
 *성공적인* HTTP 트랜잭션이 우연히 5xx 상태 코드를 실어 나르는 것은
 어떤 실패 모드에도 해당하지 않으므로, 프록시는 그 응답을 그대로 둡니다.
 
@@ -127,7 +127,7 @@ injected error 503
 
    ```sh
    linkerd diagnostics proxy-metrics -n playground deploy/playground-client \
-     | grep -E '^response_total|^outbound_http_balancer_in_failfast' \
+     | grep -E '^response_total|^outbound_http_errors_total' \
      | grep -v ' 0$' | head
    ```
 
@@ -146,7 +146,7 @@ injected error 503
 ## 수정
 
 두 버전 모두에서 폴트 인젝션을 끕니다. **양쪽** 노브 모두 기본값으로
-리셋합니다 — Recreate 단계에서 `ERROR_CODE=503`을 그대로 두면 업그레이드
+리셋합니다, Recreate 단계에서 `ERROR_CODE=503`을 그대로 두면 업그레이드
 후에도 서버 로그에 `errorRate=0% errorCode=503`이 남아 있게 됩니다
 (`errorRate=0`이 인젝션을 단락시키므로 무해하지만, 잘못된 상태가 남는
 것은 헷갈립니다):
@@ -170,10 +170,10 @@ kubectl -n playground logs deploy/playground-server-http-primary -c server --tai
 ```
 
 ```
-2026/05/14 04:56:43 server listening :8080 — version=v1 response="hello from primary" latency=0ms+0ms errorRate=0% errorCode=500
+2026/05/14 04:56:43 server listening :8080, version=v1 response="hello from primary" latency=0ms+0ms errorRate=0% errorCode=500
 ```
 
-실제 환경에서 수정은 워크로드 배포입니다 — 메시는 제 일을 했고,
+실제 환경에서 수정은 워크로드 배포입니다, 메시는 제 일을 했고,
 워크로드가 제 일을 못 한 것입니다.
 
 ## 되돌리기

@@ -1,4 +1,4 @@
-# 09 — 만료된 웹훅 `caBundle`이 Pod admission을 차단함
+# 09 - 만료된 웹훅 `caBundle`이 Pod admission을 차단함
 
 Linkerd Enterprise는 `linkerd-proxy-injector-webhook-config`라는
 `MutatingWebhookConfiguration` 하나와,
@@ -139,7 +139,7 @@ linkerd check
 # 3. 정상성 확인 차원에서, injector Pod 자체는 정상입니다:
 kubectl -n linkerd get pod -l linkerd.io/control-plane-component=proxy-injector
 kubectl -n linkerd logs deploy/linkerd-proxy-injector --tail=20
-# (조용함 — API 서버가 웹훅에 도달하지 못하기 때문에 admission 요청 자체가
+# (조용함 - API 서버가 웹훅에 도달하지 못하기 때문에 admission 요청 자체가
 # 도착하지 않습니다)
 ```
 

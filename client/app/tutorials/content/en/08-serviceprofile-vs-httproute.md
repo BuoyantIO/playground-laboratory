@@ -1,4 +1,4 @@
-# 08 — ServiceProfile overrides HTTPRoute (silent, and sticky)
+# 08 - ServiceProfile overrides HTTPRoute (silent, and sticky)
 
 Linkerd supports two routing CRDs against the same Service:
 
@@ -303,13 +303,13 @@ kubectl port-forward -n playground deploy/playground-client 4191
 curl -v --data 'linkerd=debug' -X PUT localhost:4191/proxy-log-level
 
 kubectl -n playground logs deploy/playground-client -c linkerd-proxy \
-  | grep -E 'Using ServiceProfile|Using ClientPolicy'
+  | grep -E 'Using ServiceProfile|Using ClientPolicy routes'
 
 # 4. If you've already deleted the ServiceProfile but traffic still
 #    looks like Symptom B (sticky), check whether the proxy has
 #    re-decided:
 kubectl -n playground logs deploy/playground-client -c linkerd-proxy --since=5m \
-  | grep -E 'Using ServiceProfile|Using ClientPolicy'
+  | grep -E 'Using ServiceProfile|Using ClientPolicy routes'
 # If the most recent line for the destination is still "Using ServiceProfile",
 # the sidecar hasn't been rebuilt, roll the client.
 ```

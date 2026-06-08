@@ -1,10 +1,10 @@
-# 06 — Persistent failfast from a CrashLoopBackOff
+# 06 - Persistent failfast from a CrashLoopBackOff
 
 A pathological version of the readiness flap: the server crashes on startup,
 kubelet never marks it `Ready`, the Service is permanently empty, every
 outbound request fails with `504 failfast`. The mesh-side symptom is
 identical to [runbook 04](04-failfast-no-endpoints.md); the *operational*
-remediation is completely different — you can't just `scale --replicas=1`.
+remediation is completely different, you can't just `scale --replicas=1`.
 
 ## Setup
 
@@ -130,7 +130,7 @@ linkerd diagnostics proxy-metrics -n playground pod/"$POD" \
 
 ## Fix
 
-Stop crashing — on both versions:
+Stop crashing, on both versions:
 
 ```sh
 helm upgrade demo \

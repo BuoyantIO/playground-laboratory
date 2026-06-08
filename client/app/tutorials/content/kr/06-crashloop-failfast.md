@@ -1,10 +1,10 @@
-# 06 — CrashLoopBackOff로 인한 지속적 failfast
+# 06 - CrashLoopBackOff로 인한 지속적 failfast
 
 readiness 깜빡임의 병적인 형태: 서버가 시작 시점에 크래시하고, kubelet이
 결코 `Ready`로 표시하지 못해 Service가 영구적으로 비어 있게 되며, 모든
 아웃바운드 요청이 `504 failfast`로 실패합니다. 메시 측의 증상은
 [런북 04](04-failfast-no-endpoints.md)와 동일하지만, *운영* 측의 해결책은
-완전히 다릅니다 — 그저 `scale --replicas=1`만 할 수 없습니다.
+완전히 다릅니다, 그저 `scale --replicas=1`만 할 수 없습니다.
 
 ## 설치
 
@@ -129,7 +129,7 @@ linkerd diagnostics proxy-metrics -n playground pod/"$POD" \
 
 ## 수정
 
-크래시를 멈추세요 — 두 버전 모두에서:
+크래시를 멈추세요, 두 버전 모두에서:
 
 ```sh
 helm upgrade demo \

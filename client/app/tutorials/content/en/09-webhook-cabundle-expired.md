@@ -1,4 +1,4 @@
-# 09 — Expired webhook `caBundle` blocks pod admission
+# 09 - Expired webhook `caBundle` blocks pod admission
 
 Linkerd Enterprise registers a `MutatingWebhookConfiguration` named
 `linkerd-proxy-injector-webhook-config` and two
@@ -136,7 +136,7 @@ linkerd check
 # 3. As a sanity check, the injector pod itself is fine:
 kubectl -n linkerd get pod -l linkerd.io/control-plane-component=proxy-injector
 kubectl -n linkerd logs deploy/linkerd-proxy-injector --tail=20
-# (silent — no admission requests are arriving because the API server
+# (silent - no admission requests are arriving because the API server
 # can't reach the webhook)
 ```
 
