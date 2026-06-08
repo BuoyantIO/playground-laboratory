@@ -1,24 +1,28 @@
 'use client';
 
 import { AnnouncementBar } from './components/AnnouncementBar';
+import { ConcurrencyControl } from './components/ConcurrencyControl';
 import { ConfigPanel } from './components/ConfigPanel';
 import { Counters } from './components/Counters';
 import { Footer } from './components/Footer';
+import { HeadersControl } from './components/HeadersControl';
 import { Hero } from './components/Hero';
 import { LatencyChart } from './components/LatencyChart';
 import { Nav } from './components/Nav';
 import { PollingControl } from './components/PollingControl';
 import { SamplesTable } from './components/SamplesTable';
 import { SectionLabel } from './components/SectionLabel';
+import { TargetControl } from './components/TargetControl';
 import { Topology } from './components/Topology';
 import { usePinger } from './hooks/usePinger';
 import { MAX_HISTORY } from './lib/constants';
 import { useTranslation } from './lib/i18n';
 
 export default function Home() {
-  const { samples, upstream, counters, pollIntervalMs, setPollIntervalMs } =
-    usePinger();
+  const { samples, upstream, counters, config, setConfig } = usePinger();
   const { t } = useTranslation();
+
+  const effectiveInterval = config.pollEnabled ? config.pollIntervalMs : 0;
 
   return (
     <div className="min-h-screen bg-white text-navy">
@@ -32,8 +36,24 @@ export default function Home() {
           description={t('config.description')}
         >
           <PollingControl
-            pollIntervalMs={pollIntervalMs}
-            onChange={setPollIntervalMs}
+            pollIntervalMs={effectiveInterval}
+            onChange={(ms) =>
+              setConfig({ pollIntervalMs: ms, pollEnabled: ms > 0 })
+            }
+          />
+          <ConcurrencyControl
+            concurrency={config.concurrency}
+            onChange={(n) => setConfig({ concurrency: n })}
+          />
+          <TargetControl
+            target={config.target}
+            onChange={(patch) =>
+              setConfig({ target: { ...config.target, ...patch } })
+            }
+          />
+          <HeadersControl
+            headers={config.headers}
+            onChange={(headers) => setConfig({ headers })}
           />
         </ConfigPanel>
 
@@ -54,7 +74,7 @@ export default function Home() {
         </SectionLabel>
         <SamplesTable samples={samples} />
 
-        <Footer pollIntervalMs={pollIntervalMs} />
+        <Footer pollIntervalMs={effectiveInterval} />
       </main>
     </div>
   );

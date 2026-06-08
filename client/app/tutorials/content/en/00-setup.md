@@ -61,21 +61,25 @@ Chart and images are published as public OCI artifacts on GHCR.
 ```sh
 helm install demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.11
+  --version 1.1.0
 
 kubectl -n playground rollout status \
   deploy/playground-server-http-primary \
   deploy/playground-server-http-canary \
+  deploy/playground-dashboard \
   deploy/playground-client
 ```
 
 The `playground` namespace is annotated `linkerd.io/inject: enabled`, so all
-three deployments come up with a `linkerd-proxy` sidecar.
+four deployments come up with a `linkerd-proxy` sidecar. **`playground-client`**
+is the always-on traffic generator — the meshed caller every runbook
+instruments — and **`playground-dashboard`** is the UI that shows its flow and
+owns the live config the generator pulls.
 
 ## 4. Open the dashboard
 
 ```sh
-kubectl -n playground port-forward svc/playground-client 3000:3000
+kubectl -n playground port-forward svc/playground-dashboard 3000:3000
 open http://localhost:3000
 ```
 
@@ -130,11 +134,12 @@ networkauthentication,server.policy.linkerd.io,networkpolicy --all \
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
   --set prometheus.enabled=true \
-  --set grafana.enabled=true
-  --version 1.0.11
+  --set grafana.enabled=true \
+  --version 1.1.0
 kubectl -n playground rollout status \
   deploy/playground-server-http-primary \
   deploy/playground-server-http-canary \
+  deploy/playground-dashboard \
   deploy/playground-client
 ```
 

@@ -1,11 +1,9 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
 
-  const { ticker } = await import('./app/lib/ticker');
-
-  const initialMs = parseInt(process.env.POLL_INTERVAL_MS || '1000', 10) || 1000;
-  const initialEnabled =
-    (process.env.POLL_ENABLED ?? 'true').toLowerCase() !== 'false';
-
-  ticker.configure(initialMs, initialEnabled);
+  // The dashboard no longer generates traffic itself — the standalone
+  // playground-client generator does. We only initialise the config store
+  // (seeded from env) so GET /api/config serves correct defaults at boot,
+  // even before the generator first polls it.
+  await import('./app/lib/configStore');
 }

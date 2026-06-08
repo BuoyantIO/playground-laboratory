@@ -3,15 +3,16 @@
 Resources:
   Deployment/playground-server-http-primary  (Go, env-tunable failure modes)
   Deployment/playground-server-http-canary   (Go, env-tunable failure modes)
-  Deployment/playground-client               (Next.js, polls /api/ping every 1s)
+  Deployment/playground-dashboard            (Next.js UI — live flow, counters, config)
+  Deployment/playground-client               (traffic generator — pulls config, calls the server)
   Service/playground-server-http             :{{ .Values.http.service.port }}  apex
   Service/playground-server-http-primary     :{{ .Values.http.service.port }}
   Service/playground-server-http-canary      :{{ .Values.http.service.port }}
-  Service/playground-client                  :{{ .Values.client.service.port }}
+  Service/playground-dashboard               :{{ .Values.dashboard.service.port }}
 
-Open the client UI:
-  kubectl -n {{ .Values.namespace.name }} port-forward svc/playground-client {{ .Values.client.service.port }}:{{ .Values.client.service.port }}
-  open http://localhost:{{ .Values.client.service.port }}
+Open the dashboard UI:
+  kubectl -n {{ .Values.namespace.name }} port-forward svc/playground-dashboard {{ .Values.dashboard.service.port }}:{{ .Values.dashboard.service.port }}
+  open http://localhost:{{ .Values.dashboard.service.port }}
 
 Primary env:
 {{- range $k, $v := .Values.http.primary.env }}

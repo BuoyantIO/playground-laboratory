@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: playground-dashboard
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    app: playground-dashboard
+    app.kubernetes.io/name: playground-dashboard
+    app.kubernetes.io/part-of: playground
+spec:
+  replicas: {{ .Values.dashboard.replicas }}
+  selector:
+    matchLabels:
+      app: playground-dashboard
+  template:
+    metadata:
+      labels:
+        app: playground-dashboard
+        app.kubernetes.io/name: playground-dashboard
+        app.kubernetes.io/part-of: playground
+      {{- with .Values.dashboard.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ .Values.dashboard.serviceAccount.name }}
+      containers:
+        - name: dashboard
+          image: "{{ .Values.dashboard.image.repository }}:{{ .Values.dashboard.image.tag }}"
+          imagePullPolicy: {{ .Values.dashboard.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            {{- range $k, $v := .Values.dashboard.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 5
+          resources:
+            {{- toYaml .Values.dashboard.resources | nindent 12 }}

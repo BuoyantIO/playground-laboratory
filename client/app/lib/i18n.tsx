@@ -40,21 +40,42 @@ const en: Dict = {
   'hero.titleA': 'Watch the mesh',
   'hero.titleB': 'in real time.',
   'hero.subtitle':
-    'A Next.js client polls a Go backend once a second. Inject latency, flip error rates, or crash the server, and see exactly how the mesh responds.',
+    'A standalone generator calls a Go backend through the mesh; this dashboard streams every call live. Change the rate, target, or headers and watch the mesh respond.',
 
   'section.live': 'Live traffic',
   'section.latency': 'Latency timeline',
   'section.counters': 'Counters',
   'section.samples': 'Recent samples',
 
-  'config.title': 'Client controls',
+  'config.title': 'Generator controls',
   'config.description':
-    'Tune the live polling behaviour. Defaults come from POLL_INTERVAL_MS / POLL_ENABLED env vars on the playground-client pod.',
+    'Tune the live traffic the playground-client generator sends. Changes are applied by the generator within a couple of seconds.',
 
   'polling.label': 'Polling interval',
   'polling.paused': 'Paused',
   'polling.hintPaused': 'Paused; no requests in flight',
   'polling.hintActive': 'Next request in ≤ {ms} ms',
+
+  'concurrency.label': 'Concurrency',
+  'concurrency.hint': '{n} parallel request lane(s)',
+
+  'target.label': 'Target',
+  'target.hint': 'Which service the generator calls',
+  'target.apex': 'apex (round-robin v1/v2)',
+  'target.primary': 'primary (v1)',
+  'target.canary': 'canary (v2)',
+  'target.custom': 'custom URL',
+  'target.pathLabel': 'Path',
+  'target.urlLabel': 'Custom URL',
+  'target.urlHint': 'e.g. http://host:port',
+
+  'headers.label': 'Request headers',
+  'headers.hint': 'Sent on every generated request',
+  'headers.name': 'header',
+  'headers.value': 'value',
+  'headers.add': '+ add header',
+  'headers.remove': 'remove header',
+  'headers.empty': 'no custom headers',
 
   'counters.lastResponse': 'Last response',
   'counters.lastLatency': 'Last latency',
@@ -80,6 +101,12 @@ const en: Dict = {
 
   'topology.client': 'Next.js client',
   'topology.thisBrowser': 'this browser',
+  'topology.generator': 'Traffic generator',
+  'topology.generatorSub': 'always-on',
+  'topology.genLabel': 'generator',
+  'topology.genLive': '{n}s ago',
+  'topology.genStale': 'stale {n}s',
+  'topology.genNone': 'no samples',
   'topology.serverV1': 'Go server v1',
   'topology.serverV2': 'Go server v2',
   'topology.hits': '{n} hits',
@@ -121,21 +148,42 @@ const kr: Dict = {
   'hero.titleA': '메시를 관찰하세요',
   'hero.titleB': '실시간으로.',
   'hero.subtitle':
-    'Next.js 클라이언트가 1초마다 Go 백엔드를 폴링합니다. 지연을 주입하거나, 오류율을 변경하거나, 서버를 크래시시켜, 메시가 어떻게 응답하는지 정확히 확인하세요.',
+    '독립 생성기가 메시를 통해 Go 백엔드를 호출하고, 이 대시보드가 모든 호출을 실시간으로 스트리밍합니다. 속도, 대상, 헤더를 바꿔 메시가 어떻게 응답하는지 확인하세요.',
 
   'section.live': '실시간 트래픽',
   'section.latency': '지연 시간 타임라인',
   'section.counters': '카운터',
   'section.samples': '최근 샘플',
 
-  'config.title': '클라이언트 설정',
+  'config.title': '생성기 설정',
   'config.description':
-    '실시간 폴링 동작을 조정합니다. 기본값은 playground-client 파드의 POLL_INTERVAL_MS / POLL_ENABLED 환경변수에서 가져옵니다.',
+    'playground-client 생성기가 보내는 실시간 트래픽을 조정합니다. 변경 사항은 몇 초 안에 생성기에 적용됩니다.',
 
   'polling.label': '폴링 간격',
   'polling.paused': '일시정지',
   'polling.hintPaused': '일시정지됨; 진행 중인 요청 없음',
   'polling.hintActive': '다음 요청까지 ≤ {ms} ms',
+
+  'concurrency.label': '동시성',
+  'concurrency.hint': '{n}개의 병렬 요청 레인',
+
+  'target.label': '대상',
+  'target.hint': '생성기가 호출할 서비스',
+  'target.apex': 'apex (v1/v2 라운드로빈)',
+  'target.primary': 'primary (v1)',
+  'target.canary': 'canary (v2)',
+  'target.custom': '커스텀 URL',
+  'target.pathLabel': '경로',
+  'target.urlLabel': '커스텀 URL',
+  'target.urlHint': '예: http://host:port',
+
+  'headers.label': '요청 헤더',
+  'headers.hint': '모든 생성 요청에 전송됨',
+  'headers.name': '헤더',
+  'headers.value': '값',
+  'headers.add': '+ 헤더 추가',
+  'headers.remove': '헤더 제거',
+  'headers.empty': '커스텀 헤더 없음',
 
   'counters.lastResponse': '마지막 응답',
   'counters.lastLatency': '마지막 지연',
@@ -161,6 +209,12 @@ const kr: Dict = {
 
   'topology.client': 'Next.js 클라이언트',
   'topology.thisBrowser': '이 브라우저',
+  'topology.generator': '트래픽 생성기',
+  'topology.generatorSub': '상시 실행',
+  'topology.genLabel': '생성기',
+  'topology.genLive': '{n}초 전',
+  'topology.genStale': '{n}초 지연',
+  'topology.genNone': '샘플 없음',
   'topology.serverV1': 'Go 서버 v1',
   'topology.serverV2': 'Go 서버 v2',
   'topology.hits': '{n}회 요청',

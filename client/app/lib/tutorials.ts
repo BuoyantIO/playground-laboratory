@@ -107,6 +107,18 @@ export const tutorials: TutorialMeta[] = [
       kr: '인젝터 / 밸리데이터 웹훅의 caBundle이 만료되면 새 파드에 사이드카가 주입되지 않고 새 ServiceProfile / Policy 리소스 생성이 실패합니다.',
     },
   },
+  {
+    slug: '10-ingress-mode',
+    order: '10',
+    title: {
+      en: 'Meshed ingress bypasses Linkerd routing (ingress mode)',
+      kr: '메시 ingress가 Linkerd 라우팅을 우회합니다 (ingress mode)',
+    },
+    blurb: {
+      en: 'A meshed nginx / Traefik load-balances to pod IPs, skipping HTTPRoutes, traffic splits and ServiceProfiles. Fix it with service-upstream or ingress mode.',
+      kr: '메시에 포함된 nginx / Traefik이 Pod IP로 로드 밸런싱하면 HTTPRoute, 트래픽 분할, ServiceProfile이 건너뛰어집니다. service-upstream 또는 ingress mode로 해결합니다.',
+    },
+  },
 ];
 
 export function findTutorial(slug: string): TutorialMeta | undefined {

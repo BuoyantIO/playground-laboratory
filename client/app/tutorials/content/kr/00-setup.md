@@ -60,21 +60,25 @@ linkerd check
 ```sh
 helm install demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.11
+  --version 1.1.0
 
 kubectl -n playground rollout status \
   deploy/playground-server-http-primary \
   deploy/playground-server-http-canary \
+  deploy/playground-dashboard \
   deploy/playground-client
 ```
 
 `playground` 네임스페이스에는 `linkerd.io/inject: enabled` 어노테이션이 붙어
-있어, 세 개의 디플로이먼트 모두 `linkerd-proxy` 사이드카와 함께 기동됩니다.
+있어, 네 개의 디플로이먼트 모두 `linkerd-proxy` 사이드카와 함께 기동됩니다.
+**`playground-client`**는 상시 실행 트래픽 생성기로, 모든 런북이 계측하는 메시
+호출자입니다. **`playground-dashboard`**는 그 흐름을 보여주고 생성기가 가져가는
+실시간 설정을 소유하는 UI입니다.
 
 ## 4. 대시보드 열기
 
 ```sh
-kubectl -n playground port-forward svc/playground-client 3000:3000
+kubectl -n playground port-forward svc/playground-dashboard 3000:3000
 open http://localhost:3000
 ```
 
@@ -129,11 +133,12 @@ networkauthentication,server.policy.linkerd.io,networkpolicy --all \
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
   --set prometheus.enabled=true \
-  --set grafana.enabled=true
-  --version 1.0.11
+  --set grafana.enabled=true \
+  --version 1.1.0
 kubectl -n playground rollout status \
   deploy/playground-server-http-primary \
   deploy/playground-server-http-canary \
+  deploy/playground-dashboard \
   deploy/playground-client
 ```
 

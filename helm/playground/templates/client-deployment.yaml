@@ -25,29 +25,37 @@ spec:
     spec:
       serviceAccountName: {{ .Values.client.serviceAccount.name }}
       containers:
+        # Container name kept as "client" so runbooks that `exec -c client` and
+        # diagnostics that target this pod keep working after the split.
         - name: client
           image: "{{ .Values.client.image.repository }}:{{ .Values.client.image.tag }}"
           imagePullPolicy: {{ .Values.client.image.pullPolicy }}
+          # Same image as the dashboard; the generator entrypoint is selected here.
+          command: ["node", "generator/main.js"]
           ports:
-            - name: http
-              containerPort: 3000
+            - name: health
+              containerPort: 4000
           env:
             - name: SERVER_URL
               value: "http://playground-server-http.{{ .Values.namespace.name }}.svc.cluster.local:{{ .Values.http.service.port }}"
+            - name: DASHBOARD_URL
+              value: "http://playground-dashboard.{{ .Values.namespace.name }}.svc.cluster.local:{{ .Values.dashboard.service.port }}"
+            - name: HEALTH_PORT
+              value: "4000"
             {{- range $k, $v := .Values.client.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}
             {{- end }}
           readinessProbe:
             httpGet:
-              path: /api/health
-              port: http
+              path: /healthz
+              port: health
             periodSeconds: 5
             failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: /api/health
-              port: http
+              path: /healthz
+              port: health
             periodSeconds: 10
             failureThreshold: 5
           resources:

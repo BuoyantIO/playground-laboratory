@@ -1,3 +1,5 @@
+import type { GeneratorConfig, TargetAuthority } from './types';
+
 export const MAX_HISTORY = 120;
 
 // Default polling cadence used when /api/config isn't reachable. The
@@ -22,3 +24,28 @@ export const POLL_INTERVAL_OPTIONS: PollIntervalOption[] = [
   { label: '10 s', value: 10000 },
   { label: '30 s', value: 30000 },
 ];
+
+// Concurrency choices shown in the UI (requests kept in flight per tick).
+export const CONCURRENCY_OPTIONS: number[] = [1, 2, 4, 8, 16];
+
+// Target authorities selectable in the UI. Labels are resolved via i18n keys
+// `target.<value>` in the control itself.
+export const TARGET_AUTHORITY_OPTIONS: TargetAuthority[] = [
+  'apex',
+  'primary',
+  'canary',
+  'custom',
+];
+
+// Client-side fallback used until /api/config responds.
+export const DEFAULT_GENERATOR_CONFIG: GeneratorConfig = {
+  pollIntervalMs: DEFAULT_POLL_INTERVAL_MS,
+  pollEnabled: true,
+  concurrency: 1,
+  target: { authority: 'apex', url: '', path: '/' },
+  headers: {},
+};
+
+// A sample is considered "stale" if the newest one is older than this; the
+// topology liveness chip uses it to flag a generator that stopped pushing.
+export const STALE_SAMPLE_MS = 8000;

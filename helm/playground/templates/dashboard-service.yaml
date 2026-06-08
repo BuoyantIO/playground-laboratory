@@ -1,16 +1,16 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: playground-client
+  name: playground-dashboard
   namespace: {{ .Values.namespace.name }}
   labels:
-    app: playground-client
+    app: playground-dashboard
     app.kubernetes.io/part-of: playground
 spec:
-  type: {{ .Values.client.service.type }}
+  type: {{ .Values.dashboard.service.type }}
   selector:
-    app: playground-client
+    app: playground-dashboard
   ports:
     - name: http
-      port: {{ .Values.client.service.port }}
+      port: {{ .Values.dashboard.service.port }}
       targetPort: http

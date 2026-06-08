@@ -47,26 +47,56 @@ http:
     resources: {}
     podAnnotations: {}
 
-# --- Client -------------------------------------------------------------
-client:
+# --- Dashboard (UI) -----------------------------------------------------
+# The interactive dashboard: shows the live request flow + counters and owns
+# the generator config (the source of truth the playground-client generator
+# pulls). Does not generate traffic itself.
+dashboard:
   replicas: 1
   image:
-    repository: ghcr.io/buoyantio/playground-laboratory/playground-client
-    tag: 1.0.11
+    repository: ghcr.io/buoyantio/playground-laboratory/playground-app
+    tag: 1.1.0
     pullPolicy: Always
   serviceAccount:
-    name: playground-client
+    name: playground-dashboard
   service:
     type: ClusterIP
     port: 3000
+  # Seeds the dashboard's config store at boot. The UI can change any of these
+  # at runtime, and the generator picks the change up within a couple of seconds.
+  env:
+    POLL_INTERVAL_MS: "1000"
+    POLL_ENABLED: "true"
+    CONCURRENCY: "1"
+    TARGET_AUTHORITY: "apex"
+    TARGET_PATH: "/"
+  resources: {}
+  podAnnotations: {}
+
+# --- Client (traffic generator) ----------------------------------------
+# Always-on, meshed generator. Pulls live config from the dashboard, calls the
+# server through the mesh, and pushes each result back to the dashboard. Keeps
+# the name/label "playground-client" so it remains the meshed caller the
+# runbooks instrument. Runs the same image as the dashboard, different command.
+client:
+  replicas: 1
+  image:
+    repository: ghcr.io/buoyantio/playground-laboratory/playground-app
+    tag: 1.1.0
+    pullPolicy: Always
+  serviceAccount:
+    name: playground-client
+  # Fallback defaults used only until the first successful config pull from the
+  # dashboard. After that the dashboard's config wins.
   env:
     FETCH_TIMEOUT_MS: "0"
-    # Polling cadence (ms) read by the Next.js client at runtime via /api/config.
-    # Can be overridden in the UI with the Pause/Resume button.
+    # How often the generator re-pulls config from the dashboard.
+    CONFIG_POLL_MS: "2000"
     POLL_INTERVAL_MS: "1000"
-    # Set to "false" to start the client with polling disabled. The UI can still
-    # resume it on demand.
     POLL_ENABLED: "true"
+    CONCURRENCY: "1"
+    TARGET_AUTHORITY: "apex"
+    TARGET_PATH: "/"
   resources: {}
   podAnnotations: {}
 

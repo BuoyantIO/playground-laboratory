@@ -1,13 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { DEFAULT_POLL_INTERVAL_MS, MAX_HISTORY } from '../lib/constants';
-import type { Counters, Sample } from '../lib/types';
-
-interface RuntimeConfig {
-  pollIntervalMs: number;
-  pollEnabled: boolean;
-}
+import { DEFAULT_GENERATOR_CONFIG, MAX_HISTORY } from '../lib/constants';
+import type { Counters, GeneratorConfig, Sample } from '../lib/types';
 
 const ZERO_COUNTERS: Counters = { ok: 0, fail: 0, v1: 0, v2: 0, vOther: 0 };
 
@@ -15,13 +10,14 @@ export function usePinger() {
   const [samples, setSamples] = useState<Sample[]>([]);
   const [counters, setCounters] = useState<Counters>(ZERO_COUNTERS);
   const [upstream, setUpstream] = useState('');
-  const [pollIntervalMs, setPollIntervalMsState] = useState<number>(
-    DEFAULT_POLL_INTERVAL_MS,
+  const [config, setConfigState] = useState<GeneratorConfig>(
+    DEFAULT_GENERATOR_CONFIG,
   );
 
-  // Subscribe to the server-side sample stream. The Next.js pod populates this
-  // independently of any browser (see instrumentation.ts), so opening the page
-  // shows whatever the pod has been doing.
+  // Subscribe to the dashboard's sample stream. Samples are produced by the
+  // separate playground-client generator and pushed to /api/ingest, which fans
+  // them out here — so opening the page shows whatever the generator has been
+  // doing, with no browser-side traffic generation.
   useEffect(() => {
     const es = new EventSource('/api/samples/stream');
 
@@ -64,43 +60,44 @@ export function usePinger() {
     };
   }, []);
 
-  // Load the current server-side ticker config so the dropdown reflects truth.
+  // Load the live generator config so the controls reflect the source of truth.
   useEffect(() => {
     fetch('/api/config', { cache: 'no-store' })
       .then((r) => r.json())
-      .then((c: RuntimeConfig) => {
-        const interval =
-          typeof c.pollIntervalMs === 'number' && c.pollIntervalMs >= 0
-            ? c.pollIntervalMs
-            : DEFAULT_POLL_INTERVAL_MS;
-        setPollIntervalMsState(c.pollEnabled === false ? 0 : interval);
-      })
+      .then((c: GeneratorConfig) =>
+        setConfigState((prev) => ({
+          ...prev,
+          ...c,
+          target: { ...prev.target, ...c.target },
+          headers: c.headers ?? prev.headers,
+        })),
+      )
       .catch(() => {
-        // /api/config unreachable — keep DEFAULT_POLL_INTERVAL_MS.
+        // /api/config unreachable — keep defaults.
       });
   }, []);
 
-  // Push interval changes to the server ticker. The UI dropdown is now a
-  // remote control, not a local timer.
-  const setPollIntervalMs = useCallback((ms: number) => {
-    setPollIntervalMsState(ms);
+  // Apply a (partial) config change: optimistic local update, then POST and
+  // reconcile with the server's validated/clamped response. The dashboard is
+  // the source of truth; the generator picks the change up on its next poll.
+  const setConfig = useCallback((patch: Partial<GeneratorConfig>) => {
+    setConfigState((prev) => ({
+      ...prev,
+      ...patch,
+      target: patch.target ? { ...prev.target, ...patch.target } : prev.target,
+      headers: patch.headers ?? prev.headers,
+    }));
     fetch('/api/config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        pollIntervalMs: ms,
-        pollEnabled: ms > 0,
-      }),
-    }).catch(() => {
-      // best-effort — UI state still reflects the user's intent
-    });
+      body: JSON.stringify(patch),
+    })
+      .then((r) => r.json())
+      .then((c: GeneratorConfig) => setConfigState(c))
+      .catch(() => {
+        // best-effort — local state still reflects the user's intent
+      });
   }, []);
 
-  return {
-    samples,
-    upstream,
-    counters,
-    pollIntervalMs,
-    setPollIntervalMs,
-  };
+  return { samples, upstream, counters, config, setConfig };
 }

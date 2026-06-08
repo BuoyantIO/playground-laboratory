@@ -7,9 +7,14 @@ export function getUpstreamUrl(): string {
   );
 }
 
-export async function performPing(): Promise<Sample> {
-  const url = getUpstreamUrl();
-  const timeoutMs = parseInt(process.env.FETCH_TIMEOUT_MS || '0', 10);
+// Perform a single GET against `url`, attaching `headers`, and return a Sample
+// describing the result. Shared by the dashboard's manual /api/ping and by the
+// standalone traffic generator (which supplies a resolved target + headers).
+export async function performPingTo(
+  url: string,
+  headers?: Record<string, string>,
+  timeoutMs: number = parseInt(process.env.FETCH_TIMEOUT_MS || '0', 10),
+): Promise<Sample> {
   const started = Date.now();
 
   const controller = new AbortController();
@@ -20,6 +25,7 @@ export async function performPing(): Promise<Sample> {
     const res = await fetch(url, {
       cache: 'no-store',
       signal: controller.signal,
+      headers,
     });
     const body = await res.text();
     return {
@@ -47,4 +53,10 @@ export async function performPing(): Promise<Sample> {
   } finally {
     if (timeoutId) clearTimeout(timeoutId);
   }
+}
+
+// Back-compat helper: ping the default upstream (apex Service) with no extra
+// headers. Used by the dashboard's manual /api/ping route.
+export async function performPing(): Promise<Sample> {
+  return performPingTo(getUpstreamUrl());
 }

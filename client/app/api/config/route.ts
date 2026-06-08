@@ -1,20 +1,13 @@
 import { NextResponse } from 'next/server';
-import { ticker } from '../../lib/ticker';
+import { configStore } from '../../lib/configStore';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const MAX_INTERVAL_MS = 60000;
-
-function snapshot() {
-  return {
-    pollIntervalMs: ticker.intervalMs,
-    pollEnabled: ticker.isActive(),
-  };
-}
-
+// The dashboard owns the live generator config. The playground-client
+// generator pulls it (GET) and the UI mutates it (POST, partial body).
 export async function GET() {
-  return NextResponse.json(snapshot());
+  return NextResponse.json(configStore.get());
 }
 
 export async function POST(req: Request) {
@@ -24,14 +17,5 @@ export async function POST(req: Request) {
   } catch {
     // Ignore malformed bodies; treat as no-op.
   }
-
-  if (typeof body.pollIntervalMs === 'number' && Number.isFinite(body.pollIntervalMs)) {
-    const ms = Math.max(0, Math.min(MAX_INTERVAL_MS, body.pollIntervalMs));
-    ticker.setInterval(ms);
-  }
-  if (typeof body.pollEnabled === 'boolean') {
-    ticker.setEnabled(body.pollEnabled);
-  }
-
-  return NextResponse.json(snapshot());
+  return NextResponse.json(configStore.update(body));
 }

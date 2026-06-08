@@ -22,8 +22,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: client
-            image: playground-client
+          - name: app (dashboard + generator)
+            image: playground-app
             context: client
             build-args: ''
           - name: server (http)

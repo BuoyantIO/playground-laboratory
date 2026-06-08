@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { STALE_SAMPLE_MS } from '../lib/constants';
 import { useTranslation } from '../lib/i18n';
 import type { Counters, Sample } from '../lib/types';
 import { ClientIcon, ServerIcon } from './Icons';
@@ -17,6 +19,25 @@ export function Topology({
   const latest = samples[0];
   const { ok: okCount, fail: failCount, v1: v1Count, v2: v2Count } = counters;
   const total = okCount + failCount;
+
+  // Tick a clock so the generator-liveness chip counts up between samples. It
+  // starts at 0 (matching SSR) and only becomes meaningful after mount, so the
+  // chip renders client-side only and avoids a hydration mismatch.
+  const [now, setNow] = useState(0);
+  useEffect(() => {
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const ageMs = latest && now ? now - latest.t : null;
+  const liveness =
+    now === 0
+      ? null
+      : ageMs === null
+        ? { text: t('topology.genNone'), live: false }
+        : ageMs > STALE_SAMPLE_MS
+          ? { text: t('topology.genStale', { n: Math.round(ageMs / 1000) }), live: false }
+          : { text: t('topology.genLive', { n: Math.max(0, Math.round(ageMs / 1000)) }), live: true };
 
   const ok = latest?.ok;
   const meshed = !!latest?.meshClientId;
@@ -47,8 +68,8 @@ export function Topology({
     <div className="overflow-hidden rounded-card border border-gray1 bg-white">
       <div className="grid grid-cols-1 gap-6 px-6 py-8 md:grid-cols-[1fr_2fr_1fr] md:items-center md:gap-4 md:px-10 md:py-10">
         <Node
-          title={t('topology.client')}
-          subtitle={t('topology.thisBrowser')}
+          title={t('topology.generator')}
+          subtitle={t('topology.generatorSub')}
           tag="playground-client"
           variant="outline"
           glowKey={total}
@@ -263,6 +284,17 @@ export function Topology({
       </div>
 
       <div className="flex flex-wrap items-center gap-x-7 gap-y-2.5 border-t border-gray1 bg-navy-3 px-6 py-4 font-mono text-xs text-navy-60 md:px-10">
+        {liveness && (
+          <>
+            <span>
+              {t('topology.genLabel')}{' '}
+              <span className={liveness.live ? 'text-green' : 'text-red'}>
+                {liveness.text}
+              </span>
+            </span>
+            <span className="text-navy-30">·</span>
+          </>
+        )}
         <span>
           upstream <span className="text-navy">{upstream || '—'}</span>
         </span>

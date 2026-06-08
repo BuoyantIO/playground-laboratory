@@ -1,6 +1,7 @@
 # Local development
 
-Run the server and client directly on your machine — no cluster required.
+Run the server, the dashboard, and the traffic generator directly on your
+machine — no cluster required.
 
 ## Prerequisites
 
@@ -47,52 +48,99 @@ LATENCY_MS=500 LATENCY_JITTER_MS=200 ERROR_RATE=30 ERROR_CODE=503 go run ./cmd/h
 
 The injection logic lives in `server/internal/faults/` and the env parsing in `server/internal/config/`, both protocol-agnostic so a future `cmd/grpc/` entrypoint reuses them as-is.
 
-## 2. Run the client
+## 2. Run the dashboard
 
-In a second terminal:
+The dashboard is the Next.js UI. It serves the page, owns the live generator
+config (`GET`/`POST /api/config`), receives samples from the generator
+(`POST /api/ingest`), and streams them to the browser over SSE
+(`/api/samples/stream`). **It does not generate traffic itself.**
 
 ```sh
 cd client
 npm install            # first time only
-SERVER_URL=http://localhost:8080 npm run dev
+npm run dev            # UI + API on :3000
 ```
 
-Open <http://localhost:3000>. The Next.js process pings `SERVER_URL` on its own ticker — traffic starts at boot, independently of any browser. The dashboard subscribes to the resulting sample stream over SSE (`/api/samples/stream`), so opening the page shows whatever the pod has already been doing and stays live thereafter. The polling-interval dropdown is a remote control that POSTs to `/api/config` and mutates the server ticker.
+Open <http://localhost:3000>. With no generator running yet, the flow diagram
+shows "no samples" and the generator-liveness chip stays red.
 
-If `SERVER_URL` is unset, the client falls back to the in-cluster DNS name `http://playground-server-http.playground.svc.cluster.local:8080`, which will fail outside Kubernetes.
+## 3. Run the generator
 
-### Client env vars
+The generator is a separate headless process (the same codebase, a different
+entrypoint). It pulls config from the dashboard, calls `SERVER_URL`, and pushes
+each result back to the dashboard. It's bundled into the standalone output, so
+build once, then run it pointed at the dashboard and server:
 
-| Variable            | Default | Meaning                                                          |
-| ------------------- | ------- | ---------------------------------------------------------------- |
-| `SERVER_URL`        | in-cluster DNS | Upstream the ticker (and `/api/ping`) calls               |
-| `FETCH_TIMEOUT_MS`  | `0`     | Per-request timeout in ms (`0` disables)                         |
-| `POLL_INTERVAL_MS`  | `1000`  | Initial ticker cadence                                           |
-| `POLL_ENABLED`      | `true`  | If `false`, the ticker boots paused (UI dropdown still works)    |
+```sh
+cd client
+npm run build          # produces .next/standalone/generator/main.js
+DASHBOARD_URL=http://localhost:3000 SERVER_URL=http://localhost:8080 \
+  node .next/standalone/generator/main.js
+```
 
-Both `POLL_INTERVAL_MS` and `POLL_ENABLED` are only consulted at process startup; further changes go through `POST /api/config` (which the UI dropdown uses).
+The dashboard now shows a live flow. Change the interval, concurrency, target,
+or headers in the UI and the generator adopts them within ~2s (`CONFIG_POLL_MS`).
+Kill the dashboard and the generator keeps calling the server — it just can't
+push samples until the dashboard returns.
 
-## 3. End-to-end check
+### Generator env vars
 
-With server and client both running, the dashboard should show a steady stream of `200` responses at low latency. Restart the server with `LATENCY_MS=2000` and watch the latency column climb; add `ERROR_RATE=50` and watch the success rate fall. Because the client tickers itself, you can also close the browser tab, leave it for a minute, reopen it, and see the accumulated history without any gap in traffic to the server.
+These are only fallbacks used until the first successful config pull; after
+that, the dashboard's config wins.
 
-Run a second server instance on a different port with `APP_VERSION=v2 PORT=8081 go run ./cmd/http` to see the v1 / v2 fork light up in the topology diagram (point one client window at each).
+| Variable            | Default        | Meaning                                                |
+| ------------------- | -------------- | ------------------------------------------------------ |
+| `DASHBOARD_URL`     | in-cluster DNS | Where it pulls config and pushes samples               |
+| `SERVER_URL`        | in-cluster DNS | Apex base the generator calls (target `apex`/`primary`/`canary` derive from it) |
+| `CONFIG_POLL_MS`    | `2000`         | How often it re-pulls config from the dashboard        |
+| `HEALTH_PORT`       | `4000`         | Port for the `/healthz` endpoint (k8s probes)          |
+| `FETCH_TIMEOUT_MS`  | `0`            | Per-request timeout in ms (`0` disables)               |
+| `POLL_INTERVAL_MS`  | `1000`         | Initial interval                                       |
+| `POLL_ENABLED`      | `true`         | Initial pause/resume                                   |
+| `CONCURRENCY`       | `1`            | Initial parallel request lanes                         |
+| `TARGET_AUTHORITY`  | `apex`         | Initial target: `apex`/`primary`/`canary`/`custom`     |
+| `TARGET_PATH`       | `/`            | Initial request path                                   |
+
+### Dashboard env vars
+
+The dashboard seeds its config store from the same set (`POLL_INTERVAL_MS`,
+`POLL_ENABLED`, `CONCURRENCY`, `TARGET_AUTHORITY`, `TARGET_PATH`). Those seeds
+become the source of truth the generator pulls.
+
+## 4. End-to-end check
+
+With server, dashboard, and generator running, the dashboard should show a
+steady stream of `200` responses at low latency. Restart the server with
+`LATENCY_MS=2000` and watch the latency column climb; add `ERROR_RATE=50` and
+watch the success rate fall. Because the generator runs independently of the
+browser, you can close the tab, reopen it, and see the accumulated history
+without any gap in traffic.
+
+To see the v1 / v2 fork light up, run a second server with
+`APP_VERSION=v2 PORT=8081 go run ./cmd/http` and set the dashboard target to
+**custom** with `http://localhost:8081` — or just use k3d, where the chart
+deploys the primary/canary roles behind the apex Service.
 
 ## Docker (optional)
 
-Two ways: build locally, or pull the published images from GHCR.
+The dashboard and generator ship in **one image** (`playground-app`); the role
+is selected by the container command.
 
 ### Build locally
 
 ```sh
 docker build -t playground-server:dev server/      # defaults to CMD=http
-docker build -t playground-client:dev client/
+docker build -t playground-app:dev    client/
 
 docker network create playground-dev
 docker run --rm -d --name playground-server --network playground-dev \
   -e LATENCY_MS=100 playground-server:dev
+docker run --rm -d --name playground-dashboard --network playground-dev \
+  -p 3000:3000 playground-app:dev
 docker run --rm -d --name playground-client --network playground-dev \
-  -e SERVER_URL=http://playground-server:8080 -p 3000:3000 playground-client:dev
+  -e DASHBOARD_URL=http://playground-dashboard:3000 \
+  -e SERVER_URL=http://playground-server:8080 \
+  playground-app:dev node generator/main.js
 ```
 
 The server Dockerfile takes `--build-arg CMD=http` (default) so a future `--build-arg CMD=grpc` will reuse the same pipeline.
@@ -104,12 +152,16 @@ docker network create playground-dev
 docker run --rm -d --name playground-server --network playground-dev \
   -e LATENCY_MS=100 \
   ghcr.io/buoyantio/playground-laboratory/playground-server:latest
+docker run --rm -d --name playground-dashboard --network playground-dev \
+  -p 3000:3000 \
+  ghcr.io/buoyantio/playground-laboratory/playground-app:latest
 docker run --rm -d --name playground-client --network playground-dev \
-  -e SERVER_URL=http://playground-server:8080 -p 3000:3000 \
-  ghcr.io/buoyantio/playground-laboratory/playground-client:latest
+  -e DASHBOARD_URL=http://playground-dashboard:3000 \
+  -e SERVER_URL=http://playground-server:8080 \
+  ghcr.io/buoyantio/playground-laboratory/playground-app:latest node generator/main.js
 ```
 
-Open <http://localhost:3000>. Tear down with `docker rm -f playground-client playground-server && docker network rm playground-dev`.
+Open <http://localhost:3000>. Tear down with `docker rm -f playground-client playground-dashboard playground-server && docker network rm playground-dev`.
 
 ## k3d (optional)
 
@@ -125,31 +177,35 @@ Run the chart in a local cluster — matches what the runbooks target.
 ```sh
 k3d cluster create playground
 helm install playground helm/playground
-kubectl -n playground rollout status deploy/playground-client
+kubectl -n playground rollout status \
+  deploy/playground-dashboard deploy/playground-client
 ```
 
-The client starts its in-pod ticker on boot (see `POLL_INTERVAL_MS` / `POLL_ENABLED` in `helm/playground/values.yaml`), so traffic is flowing through the cluster before you open a browser.
+The generator (`playground-client`) starts calling the server on boot and
+pushing samples to the dashboard, so traffic is flowing before you open a browser.
 
 ### Open the dashboard
 
 ```sh
-kubectl -n playground port-forward svc/playground-client 3000:3000
+kubectl -n playground port-forward svc/playground-dashboard 3000:3000
 ```
 
-Open <http://localhost:3000>. Port-forward is just the view — closing it doesn't stop the client from generating traffic, and reopening it replays the in-memory history.
+Open <http://localhost:3000>. Port-forward is just the view — closing it doesn't stop the generator, and reopening it replays the dashboard's in-memory history.
 
 ### Use locally-built images
 
-After editing code, rebuild and side-load:
+After editing code, rebuild and side-load. The dashboard and generator share
+the one `playground-app` image:
 
 ```sh
 docker build -t playground-server:dev server/
-docker build -t playground-client:dev client/
-k3d image import playground-server:dev playground-client:dev -c playground
+docker build -t playground-app:dev    client/
+k3d image import playground-server:dev playground-app:dev -c playground
 
 helm upgrade --install playground helm/playground \
   --set http.image.repository=playground-server   --set http.image.tag=dev --set http.image.pullPolicy=IfNotPresent \
-  --set client.image.repository=playground-client --set client.image.tag=dev --set client.image.pullPolicy=IfNotPresent
+  --set dashboard.image.repository=playground-app  --set dashboard.image.tag=dev --set dashboard.image.pullPolicy=IfNotPresent \
+  --set client.image.repository=playground-app     --set client.image.tag=dev --set client.image.pullPolicy=IfNotPresent
 ```
 
 ### Inject failures
