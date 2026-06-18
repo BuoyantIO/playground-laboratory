@@ -9,67 +9,42 @@ Linkerd supports two routing CRDs against the same Service:
   `RequestHeaderModifier` filters.
 
 **When both attach to the same destination, the proxy uses the
-ServiceProfile and ignores the HTTPRoute.** No error is raised. No event
-is emitted. The HTTPRoute simply has no effect.
+ServiceProfile and ignores the HTTPRoute.** No error is raised, no event
+is emitted.
 
-This is a classic migration trap: an operator adds an HTTPRoute to perform
-a canary, but a stale ServiceProfile from the v1alpha2 era is still in
-place and traffic keeps flowing per the old config.
+This is a common migration trap: an operator adds an HTTPRoute for a canary, but a stale ServiceProfile is still in place and traffic keeps flowing per the old config.
 
-**Worse, the choice is sticky.** Once an outbound proxy's per-destination
-sidecar has committed to the ServiceProfile path (because the SP existed
-and had routes/dstOverrides when the sidecar was first built), deleting
-the ServiceProfile later does **not** transition the sidecar back to the
-HTTPRoute path. The sidecar stays on the profile path with default
-(no-op) routes until it is rebuilt, which in practice means a proxy
-restart.
+**The choice is also sticky.** Once an outbound proxy's per-destination sidecar commits to the ServiceProfile path, deleting the ServiceProfile later does **not** transition the sidecar to the HTTPRoute path. The sidecar stays on the profile path with default (no-op) routes until it is rebuilt, which means a proxy restart.
 
-This runbook covers both the steady-state override and the sticky
-post-deletion behaviour. It uses the two server versions the chart
-deploys (v1 from `playground-server-http-primary`, v2 from
-`playground-server-http-canary`) behind the apex `playground-server-http`
-service.
+This runbook covers both the steady-state override and the sticky post-deletion behaviour. It uses the two server versions the chart deploys (v1 from `playground-server-http-primary`, v2 from `playground-server-http-canary`) behind the apex `playground-server-http` service.
 
 ## Setup
 
-Follow [00-setup.md](00-setup.md) for a fresh cluster, Linkerd Enterprise,
-and the playground app. You should see green `200`s with `mTLS` badges
-in the UI before proceeding. The UI should be alternating between `v1`
-(primary) and `v2` (canary) in the Version column as kube-proxy
-round-robins between the two backends behind the apex service.
+Follow [00-setup.md](00-setup.md) for a fresh cluster, Linkerd Enterprise, and the playground app. Confirm green `200`s with `mTLS` badges in the UI before proceeding. The Version column should alternate between `v1` (primary) and `v2` (canary) as kube-proxy round-robins between the two backends.
 
 ## Symptom
 
-There are two distinct symptoms; both come from the same underlying
-mechanism.
+Both symptoms stem from the same underlying mechanism.
 
 ### Symptom A: HTTPRoute appears inert from day one
 
-- The UI keeps showing **only v1** (primary) in the Version column.
+- The UI shows **only v1** (primary) in the Version column.
 - The v1 counter climbs; the v2 counter is frozen.
-- The HTTPRoute *says* `weight: 100` for the canary backend and gets
-  completely ignored.
-- `kubectl describe httproute playground-server-canary` shows no Linkerd
-  errors, no conflict warnings.
+- The HTTPRoute specifies `weight: 100` for the canary backend and is silently ignored.
+- `kubectl describe httproute playground-server-canary` shows no Linkerd errors or conflict warnings.
 
 ### Symptom B: HTTPRoute starts working only after a restart
 
-- Operator notices Symptom A.
-- Operator deletes the ServiceProfile, expecting traffic to shift to
-  HTTPRoute.
-- Nothing changes. The UI still shows only v1.
-- A few hours pass, no improvement.
-- Operator finally restarts (or rolls) the client deployment, only
-  *then* does v2 start appearing.
+- Operator notices Symptom A and deletes the ServiceProfile, expecting traffic to shift to the HTTPRoute.
+- Nothing changes; the UI still shows only v1.
+- Hours pass with no improvement.
+- Only after restarting (or rolling) the client deployment does v2 start appearing.
 
 ## Recreate
 
-This walk-through produces both symptoms in sequence. Each step has a
-verification that confirms what the proxy is actually doing before
-moving to the next. Keep the UI open in one tab and a terminal handy
-for the kubectl commands.
+This walk-through produces both symptoms in sequence, with a verification after each step. Keep the UI open in one tab and a terminal ready.
 
-First, apply a ServiceProfile that pins all traffic to v1
+First, apply a ServiceProfile that pins all traffic to v1:
 
 ```sh
 kubectl apply -f - <<'EOF'
@@ -89,10 +64,9 @@ EOF
 kubectl rollout restart deploy -n playground -l app=playground-client
 ```
 
-Wait ~5 s for the destination controller to push the profile to the
-client proxy. The UI's Version column should converge to **only v1**.
+Wait ~5 s for the destination controller to push the profile to the client proxy. The UI's Version column should converge to **only v1**.
 
-Verify with the same 20-request sample:
+Verify with a 20-request sample:
 
 ```sh
 POD=$(kubectl -n playground get pod -l app=playground-client -o jsonpath='{.items[0].metadata.name}')
@@ -106,13 +80,9 @@ kubectl -n playground debug "$POD" \
 # (no v2)
 ```
 
-The ServiceProfile is in effect. Underlying mechanism: at this point
-the client's outbound sidecar for `playground-server-http` was built
-(either at proxy start or earlier, while the SP was already present)
-and is on the **ServiceProfile path** the proxy is watching the
-profile receiver and applying `dstOverrides`.
+The ServiceProfile is in effect. The client's outbound sidecar for `playground-server-http` was built while the SP was present and is on the **ServiceProfile path**, watching the profile receiver and applying `dstOverrides`.
 
-If you want to confirm this from the policy.
+To confirm from the policy:
 
 ```sh
 linkerd diagnostics profile playground-server-http.playground.svc.cluster.local
@@ -160,8 +130,7 @@ linkerd diagnostics profile playground-server-http.playground.svc.cluster.local
 }
 ```
 
-The operator decides to canary all traffic to v2 and applies an
-HTTPRoute, unaware that a ServiceProfile is still in the way:
+The operator now applies an HTTPRoute to canary all traffic to v2, unaware that the ServiceProfile is still in the way:
 
 ```sh
 kubectl apply -f - <<'EOF'
@@ -191,8 +160,7 @@ spec:
 EOF
 ```
 
-Wait ~5 s. The HTTPRoute claims 100 % to v2, but the UI **still shows
-only v1**.
+Wait ~5 s. The HTTPRoute claims 100% to v2, but the UI **still shows only v1**.
 
 Re-run the sample:
 
@@ -208,7 +176,7 @@ kubectl -n playground debug "$POD" \
 # (no v2)
 ```
 
-Confirm both resources happily coexist with no error event:
+Confirm both resources coexist with no error event:
 
 ```sh
 kubectl -n playground get serviceprofile,httproute
@@ -222,19 +190,16 @@ NAME                                                           HOSTNAMES   AGE
 httproute.gateway.networking.k8s.io/playground-server-canary               6s
 ```
 
-**This is Symptom A: HTTPRoute silently ignored while a SP with routes
-or `dstOverrides` is present.**
+**This is Symptom A: HTTPRoute silently ignored while a SP with routes or `dstOverrides` is present.**
 
-The operator notices Symptom A and concludes "I just need to remove
-the ServiceProfile and the HTTPRoute will take over." Delete it:
+The operator concludes that removing the ServiceProfile will let the HTTPRoute take over. Delete it:
 
 ```sh
 kubectl -n playground delete serviceprofile \
   playground-server-http.playground.svc.cluster.local
 ```
 
-Wait ~10 s for the destination controller to push the "no profile"
-update and re-run the sample:
+Wait ~10 s for the destination controller to push the "no profile" update, then re-run the sample:
 
 ```sh
 kubectl -n playground debug "$POD" \
@@ -247,43 +212,22 @@ kubectl -n playground debug "$POD" \
      11 x-app-version: v2
 ```
 
-The HTTPRoute that says `weight: 100 → canary` is still inert. The
-ServiceProfile is gone, but the proxy hasn't switched paths.
+The HTTPRoute (`weight: 100 → canary`) is still inert. The ServiceProfile is gone, but the proxy has not switched paths.
 
 ## Why this happens
 
-The outbound proxy subscribes to *both* the ServiceProfile stream (from
-the destination controller) and the OutboundPolicy stream (from the
-policy controller, where HTTPRoute lives) for every destination. The
-two arrive at the proxy in parallel.
+The outbound proxy subscribes to both the ServiceProfile stream (from the destination controller) and the OutboundPolicy stream (from the policy controller, where HTTPRoute lives) for every destination. When building the per-destination HTTP sidecar, it chooses **one** source.
 
-When building the per-destination HTTP sidecar, the proxy chooses
-**one** source.
+**1. ServiceProfile wins if it has routes or `dstOverrides`.** An empty ServiceProfile (no routes, no `dstOverrides`) does **not** override policy and is safe to leave in place. The trap is specifically ServiceProfiles that carry routing logic.
 
-**1. ServiceProfile wins if it has routes or `dstOverrides`.** An empty
-ServiceProfile (no routes, no `dstOverrides`) does **not** override the
-policy, those are safe to leave around. The trap is specifically
-ServiceProfiles that *do* carry routing logic.
+**2. The choice is made once, at sidecar construction.** Once the ServiceProfile path is chosen, it is **not** re-evaluated. The sidecar is permanently subscribed to the profile receiver and ignores the policy receiver for the rest of its life.
 
-**2. The choice is made once, at sidecar construction.** If the
-ServiceProfile path is chosen, and the logic is **not** re-evaluated. 
-The sidecar is permanently subscribed to the profile receiver and ignores
-the policy receiver for the rest of its life.
+When the ServiceProfile is later deleted, the sidecar serves traffic using default routes, **not** the HTTPRoute. The routing decision is re-evaluated when:
 
-When the ServiceProfile is later deleted the sidecar serves traffic using 
-the default routes and **not** the HTTPRoute. The routing decision is re-evaluates
-when: 
+- **Proxy restart**: every destination's sidecar is reconstructed. This is the reliable trigger.
+- **Per-destination cache eviction**: if a destination is idle long enough, the cache entry is evicted and the next request builds a fresh sidecar from current state. Under continuous traffic, this eviction never happens.
 
-- **Proxy restart**: every destination's sidecar is reconstructed.
-  This is the reliable trigger.
-- **Per-destination cache eviction**: If a destination is idle long enough,
-  the cache entry is evicted; the next request to that destination
-  builds a fresh sidecar with the current state. Under continuous
-  traffic (which is the SMA setup), this eviction never happens.
-
-So the operationally accurate rule is: **after removing a
-ServiceProfile to activate an HTTPRoute, roll the proxies that were
-sending to that destination.**
+The operationally accurate rule: **after removing a ServiceProfile to activate an HTTPRoute, roll the proxies that were sending to that destination.**
 
 ## Diagnose
 
@@ -316,8 +260,7 @@ kubectl -n playground logs deploy/playground-client -c linkerd-proxy --since=5m 
 
 ## Fix
 
-Delete the ServiceProfile **and** roll the clients sending to that
-destination. Both steps are required:
+Delete the ServiceProfile **and** roll the clients sending to that destination. Both steps are required:
 
 ```sh
 kubectl -n playground delete serviceprofile \
@@ -327,10 +270,6 @@ kubectl -n playground rollout restart deploy/playground-client
 kubectl -n playground rollout status deploy/playground-client
 ```
 
-Watch the UI: after the rollout, v2 starts appearing in the Version
-column. After 30 seconds, v2 should dominate (per the HTTPRoute's
-`weight: 100`).
+After the rollout, v2 starts appearing in the Version column. After 30 seconds, v2 should dominate per the HTTPRoute's `weight: 100`.
 
-If multiple workloads send to the affected destination, roll all of
-them, every client proxy independently committed to ServiceProfile and
-each one needs its sidecar rebuilt.
+If multiple workloads send to the affected destination, roll all of them. Each client proxy independently committed to ServiceProfile and each needs its sidecar rebuilt.

@@ -13,7 +13,7 @@ required anywhere.**
 
 ## How to use this directory
 
-1. **Start with [00-setup.md](00-setup.md)** — k3d cluster, Linkerd
+1. **Start with [00-setup.md](00-setup.md):** k3d cluster, Linkerd
    Enterprise install, SMA app deploy, dashboard port-forward. Each
    subsequent runbook assumes the baseline from this file: green `200`s
    in the UI with green `mTLS` badges on every sample and both `v1` and
@@ -23,7 +23,7 @@ required anywhere.**
    step, walk through "What you'll see" and "Diagnose", apply "Fix",
    then "Revert" to return to baseline.
 
-3. **Reset between sessions** when something gets stuck — `k3d cluster
+3. **Reset between sessions** when something gets stuck: `k3d cluster
    delete sma` and re-run `00-setup.md`. It takes ~90 seconds.
 
 ## The dashboard
@@ -34,10 +34,10 @@ teaching against:
 
 - **Status code** per request, in a pill.
 - **Latency** of the last fetch.
-- **Version** (v1 / v2) of the backend that served the response — the
+- **Version** (v1 / v2) of the backend that served the response, the
   chart deploys both versions behind the same apex Service, so by default
   kube-proxy alternates between them.
-- **mTLS column** — green `mTLS` if the response included an
+- **mTLS column:** green `mTLS` if the response included an
   `x-mesh-client-id` header (the inbound proxy intercepted and forwarded
   the verified peer identity), red `plain` otherwise.
 - **client-id** value in the topology footer.
@@ -63,7 +63,7 @@ sit on each node.
 | Client UI shows `ERR` (status 0), server logs the 200 a moment later | Client tore down the mTLS connection before the server replied | [10](10-client-tls-terminated.md) |
 | `nc` from a meshed pod hangs ~10 s and disconnects with no banner | Outbound protocol-detection timeout | [11](11-protocol-detection-timeout.md) |
 | `502` from the proxy, control plane logs `TokenReview failed` | SA deleted/recreated; workload cert renewal fails | [12](12-sa-recreated-cert-renewal-fails.md) |
-| `200`s with **mTLS column red `plain`** in the UI | linkerd-cni race — iptables redirect rules never installed | [13](13-cni-race-condition.md) |
+| `200`s with **mTLS column red `plain`** in the UI | linkerd-cni race, iptables redirect rules never installed | [13](13-cni-race-condition.md) |
 | All-cluster `502` with `unknown issuer` in proxy logs | Trust anchor rotated without a bundle | [14](14-trust-anchor-rotation.md) |
 | UI stuck on only v1 (or only v2) despite an HTTPRoute that says otherwise | ServiceProfile with `dstOverrides` is silently overriding the HTTPRoute | [15](15-serviceprofile-vs-httproute.md) |
 
@@ -73,7 +73,7 @@ Every runbook leans on these five techniques. Memorise them and you don't
 need viz:
 
 ```sh
-# 1. Proxy logs — always the authoritative source.
+# 1. Proxy logs, always the authoritative source.
 kubectl -n sma logs deploy/sma-client -c linkerd-proxy --tail=50 -f
 kubectl -n sma logs deploy/sma-server-v1 -c linkerd-proxy --tail=50 -f
 kubectl -n sma logs deploy/sma-server-v2 -c linkerd-proxy --tail=50 -f
@@ -110,7 +110,7 @@ l5d-proxy-connection: close      # only when close_connection = true
 ```
 
 The header is only emitted when the receiver is a meshed peer (mTLS
-established) — see
+established), see
 [linkerd/app/core/src/errors/respond.rs](../../buoyant/buoyant-proxy/linkerd/app/core/src/errors/respond.rs).
 In practice that means `curl` from inside a meshed pod sees it; `curl` from
 your laptop via port-forward typically does not.

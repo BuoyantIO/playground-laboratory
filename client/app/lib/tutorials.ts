@@ -111,12 +111,12 @@ export const tutorials: TutorialMeta[] = [
     slug: '10-ingress-mode',
     order: '10',
     title: {
-      en: 'Meshed ingress bypasses Linkerd routing (ingress mode)',
-      kr: '메시 ingress가 Linkerd 라우팅을 우회합니다 (ingress mode)',
+      en: 'Meshing an ingress without bypassing Linkerd routing',
+      kr: 'ingress를 메시에 포함하되 Linkerd 라우팅 우회 막기',
     },
     blurb: {
-      en: 'A meshed nginx / Traefik load-balances to pod IPs, skipping HTTPRoutes, traffic splits and ServiceProfiles. Fix it with service-upstream or ingress mode.',
-      kr: '메시에 포함된 nginx / Traefik이 Pod IP로 로드 밸런싱하면 HTTPRoute, 트래픽 분할, ServiceProfile이 건너뛰어집니다. service-upstream 또는 ingress mode로 해결합니다.',
+      en: 'A meshed ingress load-balances to pod IPs, skipping HTTPRoutes, splits and ServiceProfiles. Point each controller (nginx, Traefik, Envoy Gateway, kgateway) at the Service, or fall back to ingress mode.',
+      kr: '메시에 포함된 ingress가 Pod IP로 로드 밸런싱하면 HTTPRoute, 트래픽 분할, ServiceProfile이 건너뛰어집니다. 각 컨트롤러(nginx, Traefik, Envoy Gateway, kgateway)를 Service로 향하게 하거나 ingress mode로 후퇴합니다.',
     },
   },
 ];

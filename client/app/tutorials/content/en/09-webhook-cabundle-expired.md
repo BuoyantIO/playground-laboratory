@@ -4,38 +4,37 @@ Linkerd Enterprise registers a `MutatingWebhookConfiguration` named
 `linkerd-proxy-injector-webhook-config` and two
 `ValidatingWebhookConfiguration` resources named
 `linkerd-policy-validator-webhook-config` and
-`linkerd-sp-validator-webhook-config`, so the API server calls the
-injector and validators on every pod / Policy / ServiceProfile
+`linkerd-sp-validator-webhook-config`. The API server calls the
+injector and validators on every pod, Policy, and ServiceProfile
 creation. The webhook's `clientConfig.caBundle` is the CA cert the API
 server uses to verify the webhook's TLS server cert. When that caBundle
 expires, the API server can't reach the webhook, and every new proxy
 injection or Policy / ServiceProfile creation fails.
 
-By default, the `clientConfig.caBundle` is a self-signed certificate
-with a 365-day validity, created by Helm at installation time. A
-classic real-world cause is an operator who hasn't upgraded Linkerd in
-more than a year, letting the certificate expire.
+By default, `clientConfig.caBundle` is a self-signed certificate with
+a 365-day validity created by Helm at install time. The common
+real-world cause is not upgrading Linkerd for over a year.
 
 ## Setup
 
 Follow [00-setup.md](00-setup.md) for a fresh cluster, Linkerd
-Enterprise, and the playground app. You should see green `200`s with
-`mTLS` badges in the UI before proceeding.
+Enterprise, and the playground app. Confirm green `200`s with `mTLS`
+badges in the UI before proceeding.
 
 ## Symptom
 
 - Existing pods keep running and the UI keeps showing green `200`s.
-- **New pods created in `playground` are not injected with the
+- **New pods in `playground` are not injected with the
   `linkerd-proxy` sidecar.**
 - **New `ServiceProfile` or policy resources in `playground` fail to
   be created.**
 
-The failure mode is admission-time, not data-plane. Running workloads
-are fine; the next deploy is broken.
+The failure is admission-time, not data-plane: running workloads are
+fine, but the next deploy is broken.
 
 ## Recreate
 
-Replace the caBundle with an already-expired self-signed cert:
+Replace the caBundle with an expired self-signed cert:
 
 ```sh
 # Generate a cert that expires in 2 minutes.
@@ -55,7 +54,7 @@ kubectl patch mutatingwebhookconfiguration \
   -p="[{\"op\":\"replace\",\"path\":\"/webhooks/0/clientConfig/caBundle\",\"value\":\"${EXPIRED_B64}\"}]"
 ```
 
-Now force a new pod by scaling the server:
+Force a new pod by scaling the server:
 
 ```sh
 kubectl -n playground scale deploy -l app=playground-server-http --replicas=2
@@ -63,14 +62,14 @@ kubectl -n playground scale deploy -l app=playground-server-http --replicas=2
 
 ## What you'll see
 
-The new pods are not injected with the proxy:
+The new pods lack the proxy sidecar:
 
 ```
 playground    playground-server-http-primary-5c7df787c8-2qvjp   1/1     Running   0          8s
 playground    playground-server-http-canary-5c6b6bbc99-zpg4l    1/1     Running   0          8s
 ```
 
-Inspect the broken caBundle:
+Inspect the caBundle:
 
 ```sh
 kubectl get mutatingwebhookconfiguration \
@@ -95,24 +94,24 @@ linkerd-webhooks-and-apisvc-tls
     see https://linkerd.io/2/checks/#l5d-proxy-injector-webhook-cert-valid for hints
 ```
 
-Running pods are unaffected; the UI keeps polling green.
+Running pods are unaffected; the UI stays green.
 
 ## Why this happens
 
-Kubernetes uses the `clientConfig.caBundle` from the webhook config to
+Kubernetes uses `clientConfig.caBundle` from the webhook config to
 verify the TLS cert presented by `linkerd-proxy-injector.linkerd.svc:443`
-and the other validating webhooks. The chain is: API server → webhook
-svc (TLS) → injector/validator pod. If the caBundle doesn't validate
-the server cert, the API server rejects the handshake before sending
-the admission request.
+and the other validating webhooks. The call chain is: API server →
+webhook svc (TLS) → injector/validator pod. If the caBundle doesn't
+validate the server cert, the API server rejects the handshake before
+sending the admission request.
 
-The injector pod itself is healthy. Its TLS cert (separate, served by
-the pod) is fine. The problem is purely in the trust input that the
-API server uses to verify it.
+The injector pod itself is healthy; its TLS cert (served separately by
+the pod) is fine. The problem is the trust anchor the API server uses
+to verify it.
 
-Why running pods are unaffected: the proxy-injector is only invoked at
-pod *creation* time. Once injected, the sidecar keeps running without
-further involvement from the webhook.
+Running pods are unaffected because the proxy-injector is only called
+at pod creation time. Once injected, the sidecar runs without further
+webhook involvement.
 
 ## Diagnose
 
@@ -142,9 +141,8 @@ kubectl -n linkerd logs deploy/linkerd-proxy-injector --tail=20
 
 ## Fix
 
-The easiest fix is to trigger a `helm upgrade` or `linkerd upgrade`.
-Either will generate a new self-signed certificate with a 365-day
-validity.
+Run `helm upgrade` or `linkerd upgrade`. Either generates a new
+self-signed certificate with a 365-day validity.
 
 ```sh
 linkerd upgrade | kubectl apply -f -
@@ -154,15 +152,14 @@ helm upgrade -n linkerd linkerd-enterprise control-plane --reuse-values
 linkerd check
 ```
 
-In production, cert-manager takes care of the sync and re-populates
-the caBundle without manual intervention.
+In production, cert-manager re-populates the caBundle automatically.
 
 ## Revert
 
-The `Fix` section already restored the caBundle. Sanity check:
+The Fix section already restored the caBundle. Verify:
 
 ```sh
 linkerd upgrade | kubectl apply -f -
 ```
 
-New pods should now be admitted, and the sidecar should be present.
+New pods should now be admitted with the sidecar present.

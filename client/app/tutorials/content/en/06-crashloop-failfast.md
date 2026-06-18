@@ -1,16 +1,16 @@
 # 06 - Persistent failfast from a CrashLoopBackOff
 
-A pathological version of the readiness flap: the server crashes on startup,
-kubelet never marks it `Ready`, the Service is permanently empty, every
+A pathological readiness-flap variant: the server crashes on startup, kubelet
+never marks it `Ready`, the Service stays permanently empty, and every
 outbound request fails with `504 failfast`. The mesh-side symptom is
-identical to [runbook 04](04-failfast-no-endpoints.md); the *operational*
-remediation is completely different, you can't just `scale --replicas=1`.
+identical to [runbook 04](04-failfast-no-endpoints.md), but the operational
+remediation is different; you can't just `scale --replicas=1`.
 
 ## Setup
 
-Follow [00-setup.md](00-setup.md) for a fresh cluster, Linkerd Enterprise,
-and the playground app. You should see green `200`s with `mTLS` badges in the
-UI before proceeding.
+Follow [00-setup.md](00-setup.md) to set up a fresh cluster, Linkerd Enterprise,
+and the playground app. Confirm green `200`s with `mTLS` badges in the UI
+before proceeding.
 
 ## Symptom
 
@@ -34,11 +34,10 @@ kubectl -n playground rollout status \
   deploy/playground-server-http-primary --timeout=10s || true
 ```
 
-Both versions must crash, if only the primary is in CrashLoopBackOff,
-kube-proxy keeps routing successfully to the canary and you never see
-failfast.
+Both versions must crash. If only the primary is in `CrashLoopBackOff`,
+kube-proxy keeps routing to the canary and failfast never appears.
 
-The rollout will not converge. Within a minute:
+The rollout will not converge. Within a minute, check pods:
 
 ```sh
 kubectl -n playground get pods -l app=playground-server-http
@@ -50,13 +49,11 @@ playground-server-http-primary-58dc4c65c6-4jwqt   1/2     CrashLoopBackOff   1 (
 playground-server-http-canary-69bf7bf467-blgg5    1/2     CrashLoopBackOff   1 (11s ago)   16s
 ```
 
-`1/2` because the sidecar is still running, only the `server` container is
-crashlooping.
+`1/2` because the sidecar is still running; only the `server` container is crashlooping.
 
 ## What you'll see
 
-
-Curl from the client, same failfast response as runbook 04:
+Curl from the client; same failfast response as runbook 04:
 
 ```sh
 POD=$(kubectl -n playground get pod -l app=playground-client -o jsonpath='{.items[0].metadata.name}')
@@ -71,15 +68,15 @@ kubectl -n playground debug "$POD" --image=curlimages/curl --profile=general --q
 < l5d-proxy-connection: close
 ```
 
-But unlike a transient scale-to-zero, there's nothing telling the proxy
-"endpoints are coming back". Watch endpoints stay empty:
+Unlike a transient scale-to-zero, nothing tells the proxy endpoints are coming
+back. Endpoints stay empty:
 
 ```sh
 linkerd diagnostics endpoints playground-server-http.playground.svc.cluster.local:8080
 # No endpoints found.
 ```
 
-The pod's events tell the story:
+Pod events confirm the back-off:
 
 ```sh
 kubectl -n playground describe pod -l app=playground-server-http | grep -A20 Events:
@@ -91,12 +88,12 @@ kubectl -n playground describe pod -l app=playground-server-http | grep -A20 Eve
 
 ## Why this happens
 
-Same outbound failfast path as runbook 04. The difference is that the
-failure is *durable*, kubelet exponentially backs off restarts, so
-endpoints stay empty for the foreseeable future.
+Same outbound failfast path as runbook 04, but the failure is *durable*:
+kubelet exponentially backs off restarts, so endpoints stay empty
+indefinitely.
 
-The distinguishing diagnostic step is to look at the pod lifecycle, not the
-mesh. The proxy is reacting correctly; the workload is broken.
+The key diagnostic is the pod lifecycle, not the mesh. The proxy is reacting
+correctly; the workload is broken.
 
 ## Diagnose
 
@@ -130,7 +127,7 @@ linkerd diagnostics proxy-metrics -n playground pod/"$POD" \
 
 ## Fix
 
-Stop crashing, on both versions:
+Stop the crashes on both versions:
 
 ```sh
 helm upgrade demo \
@@ -144,7 +141,7 @@ kubectl -n playground rollout status \
   deploy/playground-server-http-primary deploy/playground-server-http-canary
 ```
 
-Real-world causes worth mentioning:
+Common real-world causes:
 
 - Missing ConfigMap / Secret mount.
 - Bad image tag (`ImagePullBackOff` looks similar from the mesh's POV).

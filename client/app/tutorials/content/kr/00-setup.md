@@ -1,8 +1,6 @@
 # 00 - 클러스터 + Linkerd Enterprise 설치
 
-이 디렉터리의 모든 런북은 Linkerd Enterprise(BEL)가 설치되고 플레이그라운드 랩이
-배포된 새 k3d 클러스터에서 시작합니다. 이 파일은 정식 가이드이며, 다른 모든
-런북은 이 문서를 참조하는 짧은 "## Setup" 섹션을 가집니다.
+이 디렉터리의 모든 런북은 Linkerd Enterprise(BEL)가 설치된 새 k3d 클러스터를 전제합니다. 이 파일이 정식 설치 가이드이며, 각 런북의 "## Setup" 섹션은 이 문서를 참조합니다.
 
 ## 머신 사전 준비물
 
@@ -30,12 +28,12 @@ export BUOYANT_LICENSE='<your license string>'
 k3d cluster create playground \
   --servers 1 --agents 1 \
   --image rancher/k3s:v1.30.1-k3s1 \
-  --k3s-arg '--disable=traefik@server:*'
+  --k3s-arg '--disable=traefik@server:*' \
+  --port '8081:80@loadbalancer'
 kubectl cluster-info
 ```
 
-노드 두 개(서버 1개 + 에이전트 1개)가 있으면 런북 15(CNI 경합)와
-14(SA 재생성, 파드 재스케줄)를 시연하기 쉬워집니다.
+노드 두 개(서버 1개 + 에이전트 1개)는 런북 15(CNI 경합)와 14(SA 재생성, 파드 재스케줄) 시연에 필요합니다. `--port '8081:80@loadbalancer'`는 ingress 런북용으로 ingress 컨트롤러를 `localhost:8081`에 노출하며, 다른 런북에는 영향이 없어 이 클러스터 하나로 모든 런북을 진행할 수 있습니다.
 
 ## 2. Linkerd Enterprise 설치
 
@@ -55,7 +53,7 @@ linkerd check
 
 ## 3. 플레이그라운드 배포
 
-차트와 이미지는 GHCR에 공개 OCI 아티팩트로 게시되어 있습니다.
+차트와 이미지는 GHCR에 공개 OCI 아티팩트로 게시됩니다.
 
 ```sh
 helm install demo \
@@ -69,11 +67,7 @@ kubectl -n playground rollout status \
   deploy/playground-client
 ```
 
-`playground` 네임스페이스에는 `linkerd.io/inject: enabled` 어노테이션이 붙어
-있어, 네 개의 디플로이먼트 모두 `linkerd-proxy` 사이드카와 함께 기동됩니다.
-**`playground-client`**는 상시 실행 트래픽 생성기로, 모든 런북이 계측하는 메시
-호출자입니다. **`playground-dashboard`**는 그 흐름을 보여주고 생성기가 가져가는
-실시간 설정을 소유하는 UI입니다.
+`playground` 네임스페이스에 `linkerd.io/inject: enabled` 어노테이션이 있어 네 디플로이먼트 모두 `linkerd-proxy` 사이드카와 함께 기동됩니다. **`playground-client`**는 상시 실행 트래픽 생성기로 모든 런북이 계측하는 메시 호출자이며, **`playground-dashboard`**는 그 흐름과 생성기의 실시간 설정을 표시하는 UI입니다.
 
 ## 4. 대시보드 열기
 
@@ -82,13 +76,9 @@ kubectl -n playground port-forward svc/playground-dashboard 3000:3000
 open http://localhost:3000
 ```
 
-녹색 `200`이 일정한 흐름으로 표시되고, 지연은 수 밀리초 수준이며, "Recent samples"
-테이블의 모든 행에 **mTLS** 배지가 보여야 합니다. Topology 배너에는
-`HTTP/1.1 · mTLS`가 표시되고, `mtls verified` 칩이 녹색으로 켜집니다.
+녹색 `200`이 일정하게 흐르고, 지연은 수 밀리초 수준이며, "Recent samples" 테이블의 모든 행에 **mTLS** 배지가 표시됩니다. Topology 배너에는 `HTTP/1.1 · mTLS`가 나타나고 `mtls verified` 칩이 녹색으로 켜집니다.
 
-프록시가 우회되거나(런북 13) mTLS가 깨지면(런북 14) 배지는 **plain**으로
-바뀌고 프로토콜 배너는 빨간색이 됩니다. 그것이 여러분이 가르치게 될
-시각적 신호입니다.
+프록시가 우회되거나(런북 13) mTLS가 깨지면(런북 14) 배지는 **plain**으로 바뀌고 프로토콜 배너는 빨간색이 됩니다. 이것이 수업에서 활용하는 시각적 신호입니다.
 
 ## 진단 도구 모음
 
@@ -142,8 +132,7 @@ kubectl -n playground rollout status \
   deploy/playground-client
 ```
 
-런북이 클러스터를 복구 불가 상태로 만들면(예: 트러스트 앵커 불일치),
-얽힌 것을 풀기보다 그냥 새로 시작하는 편이 빠릅니다.
+클러스터가 복구 불가 상태가 되면(예: 트러스트 앵커 불일치), 원인을 추적하기보다 새로 시작하는 편이 빠릅니다.
 
 ```sh
 k3d cluster delete playground

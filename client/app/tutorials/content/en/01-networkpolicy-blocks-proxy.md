@@ -1,22 +1,24 @@
 # 01 - NetworkPolicy blocks the inbound proxy port
 
 The Linkerd inbound proxy listens on `:4143` for meshed traffic and `:4191`
-for the admin server. A Kubernetes `NetworkPolicy` that selects meshed pods
-but doesn't allow ingress on `:4143` silently kills all inbound mesh
-traffic, even though the application's own port (`:8080` here) is technically
-still listed.
+for the admin server. A `NetworkPolicy` that selects meshed pods but omits
+`:4143` silently kills all inbound mesh traffic, even if the application
+port (`:8080` here) is still listed.
 
 The result looks like a connection-refused 502, but the failure point is the
 CNI plugin enforcing the policy, not the workload.
 
 ## Setup
 
-Follow [00-setup.md](00-setup.md). k3d's default CNI (flannel) does not
-enforce NetworkPolicy. For this runbook, recreate the cluster with Cilium:
+> **This is the one runbook that needs its own cluster.** Every other panel
+> runs against the [00-setup.md](00-setup.md) cluster as-is. NetworkPolicy
+> enforcement requires a CNI chosen at cluster-create time. k3d's default
+> (flannel) doesn't enforce it, so you recreate the playground cluster
+> with Cilium before deploying.
 
 ```sh
-k3d cluster delete sma 2>/dev/null
-k3d cluster create sma \
+k3d cluster delete playground 2>/dev/null
+k3d cluster create playground \
   --servers 1 --agents 1 \
   --image rancher/k3s:v1.30.1-k3s1 \
   --k3s-arg '--disable=traefik@server:*' \
@@ -31,8 +33,8 @@ helm install cilium cilium/cilium --version 1.15.5 \
 kubectl -n kube-system rollout status ds/cilium --timeout=2m
 ```
 
-Then proceed with Linkerd Enterprise install + SMA deploy from
-[00-setup.md](00-setup.md). Baseline should be green.
+Then install Linkerd Enterprise and the playground chart from
+[00-setup.md](00-setup.md) (steps 2–3). Baseline should be green.
 
 ## Symptom
 
@@ -70,15 +72,14 @@ spec:
 EOF
 ```
 
-The author thought they were allowing the app port. They actually closed
-everything the mesh uses, inbound traffic in a meshed pod arrives on `:4143`,
-not `:8080`.
+The policy allows the app port but closes the mesh. Inbound traffic in a
+meshed pod arrives on `:4143`, not `:8080`.
 
-> **Note, same bug, `CiliumNetworkPolicy` form.** Because this cluster
-> runs Cilium, the same scenario can be written as a `CiliumNetworkPolicy`
+> **Note: same bug, `CiliumNetworkPolicy` form.** Because this cluster runs
+> Cilium, the same scenario can be written as a `CiliumNetworkPolicy`
 > (`cilium.io/v2`) or its cluster-wide variant `CiliumClusterwideNetworkPolicy`.
 > CNP shares the same L4 port/protocol shape as standard `NetworkPolicy`,
-> so the forgot-`:4143` mistake reproduces verbatim:
+> so the missing-`:4143` mistake reproduces verbatim:
 >
 > ```yaml
 > apiVersion: cilium.io/v2
@@ -101,10 +102,10 @@ not `:8080`.
 > ```
 >
 > CNP adds identity/service-account selectors, DNS-based egress, and L7
-> rules (`rules.http`, `rules.dns`, `rules.kafka`) on top. None of those
-> change the proxy-port story, they just open more ways to silently
-> exclude `:4143` and `:4191` from your "allow" set. The diagnosis and fix
-> are identical: include the proxy ports.
+> rules (`rules.http`, `rules.dns`, `rules.kafka`). None of those change
+> the proxy-port story; they just add more ways to silently exclude `:4143`
+> and `:4191` from the allow set. Diagnosis and fix are identical: include
+> the proxy ports.
 
 ## What you'll see
 
@@ -141,9 +142,9 @@ kubectl debug -n playground "$POD" --image=nicolaka/netshoot --profile=general -
 
 ### Direct port test
 
-Goal: prove on the wire that `:4143` is being dropped while `:8080` is
-allowed through. With Linkerd's iptables rules in play on both ends, naïve
-probes lie, the next three sections show one trap and two valid tests.
+The goal is to prove on the wire that `:4143` is dropped while `:8080` is
+allowed. With Linkerd's iptables rules in play on both ends, naive probes
+lie. The next three sections show one trap and two valid tests.
 
 ```sh
 SERVER_IP=$(kubectl -n playground get pod -l app=playground-server-http \
@@ -161,18 +162,18 @@ kubectl debug -n playground "$POD" \
 # Connection to 10.0.0.120 4143 port [tcp/*] succeeded!
 ```
 
-The debug container shares the meshed pod's netns, so it inherits the
+The debug container shares the meshed pod's netns and inherits the
 `linkerd-init` iptables rules. The `OUTPUT` chain redirects all outbound
 TCP from non-proxy UIDs to `127.0.0.1:4140` (the local outbound proxy),
-which accepts every SYN it sees. The packet never leaves the pod,
-you're handshaking with your own proxy, not the server. Cilium and the
-NetworkPolicy are not consulted.
+which accepts every SYN. The packet never leaves the pod; you are
+handshaking with your own proxy, not the server. Cilium and the
+NetworkPolicy are never consulted.
 
 #### Test 1: run as the proxy UID (exempt from the redirect)
 
 Linkerd's `OUTPUT` chain has `-m owner --uid-owner 2102 -j RETURN`, so
-traffic from UID `2102` (the proxy) bypasses the redirect. Override the
-ephemeral container's `runAsUser` and the SYN reaches the wire:
+traffic from UID `2102` (the proxy) bypasses the redirect. Override
+`runAsUser` on the ephemeral container and the SYN reaches the wire:
 
 ```sh
 cat > /tmp/proxy-uid.json <<'EOF'
@@ -189,14 +190,14 @@ kubectl debug -n playground "$POD" \
 # nc: connect to 10.0.0.120 port 4143 (tcp) timed out: Operation in progress
 ```
 
-`timed out` (not `Connection refused`), Cilium's eBPF policy silently
+`timed out` (not `Connection refused`): Cilium's eBPF policy silently
 drops the packet because no rule matches `:4143`. Calico in iptables mode
-would have returned `Connection refused` instead.
+would return `Connection refused` instead.
 
 #### Test 2: probe from an unmeshed pod with the matching label
 
 No iptables rules in this pod, so packets go out unmodified. The pod
-carries `app=playground-client` so the policy's `from` clause still
+carries `app=playground-client`, so the policy's `from` clause still
 matches, isolating the result to the port check:
 
 ```sh
@@ -233,9 +234,9 @@ kubectl -n playground delete pod netshoot
 
 Note: the `:8080` "success" is the *inbound proxy* accepting the
 handshake after PREROUTING redirects the packet from `:8080` to `:4143`
-inside the server pod, not the application on loopback. Both valid
-tests agree: `:4143` is dropped on the wire, exactly matching the
-`connect timed out` you see in the outbound proxy logs above.
+inside the server pod, not the application on loopback. Both tests agree:
+`:4143` is dropped on the wire, matching the `connect timed out` in the
+outbound proxy logs above.
 
 ## Why this happens
 
@@ -252,10 +253,10 @@ client pod                                       server pod
 ```
 
 `linkerd-init` (or the linkerd-cni plugin) installs iptables rules that
-redirect all inbound non-localhost traffic on the pod to the proxy on
-`:4143`. The app listens only on loopback for the proxy. Block `:4143` and
-the proxy can't accept the connection, the outbound side sees ECONNREFUSED.
-Same code path as runbook 03, completely different root cause.
+redirect all inbound non-localhost traffic to the proxy on `:4143`. The
+app listens only on loopback. Block `:4143` and the proxy cannot accept
+the connection; the outbound side sees ECONNREFUSED. Same code path as
+runbook 03, completely different root cause.
 
 ## Diagnose
 
@@ -272,12 +273,13 @@ kubectl -n playground get networkpolicy -o yaml \
 # 4. Confirm the app is healthy by bypassing the mesh entirely:
 kubectl -n playground port-forward deploy/playground-server-http-primary 18080:8080
 curl -s http://localhost:18080/   # works, pod loopback, no iptables
+```
 
 ## Fix
 
-Add `4143` (and `4191` if you scrape proxy metrics) to allowed ports. The
-app port `:8080` is *not* needed at all, inbound traffic never arrives on
-it directly:
+Add `4143` (and `4191` if you scrape proxy metrics) to the allowed ports.
+The app port `:8080` is not needed; inbound traffic never arrives on it
+directly:
 
 ```sh
 kubectl apply -f - <<'EOF'
@@ -304,13 +306,12 @@ spec:
 EOF
 ```
 
-The misleading bit: adding `8080` to the policy doesn't fix anything, but
-doesn't break anything either, it just makes the policy author *think*
-they're allowing real traffic. That's how this mistake survives in
-codebases for months.
+Adding `8080` to the policy neither fixes nor breaks anything; it just
+makes the author think they are allowing real traffic. That is how this
+mistake survives in codebases for months.
 
 ## Revert
 
 ```sh
-kubectl -n sma delete networkpolicy sma-server-only-8080
+kubectl -n playground delete networkpolicy playground-server-only-8080
 ```

@@ -1,9 +1,6 @@
 # 00 - Cluster + Linkerd Enterprise setup
 
-Every runbook in this directory starts from a fresh k3d cluster with Linkerd
-Enterprise (BEL) installed and the playground laboratory deployed. This file
-is the canonical walkthrough; every other runbook has a condensed "## Setup"
-section that references back here.
+Every runbook starts from a fresh k3d cluster with Linkerd Enterprise (BEL) installed and the playground laboratory deployed. This is the canonical walkthrough; every other runbook has a condensed "## Setup" section that references it.
 
 ## Prerequisites on your machine
 
@@ -31,12 +28,12 @@ export BUOYANT_LICENSE='<your license string>'
 k3d cluster create playground \
   --servers 1 --agents 1 \
   --image rancher/k3s:v1.30.1-k3s1 \
-  --k3s-arg '--disable=traefik@server:*'
+  --k3s-arg '--disable=traefik@server:*' \
+  --port '8081:80@loadbalancer'
 kubectl cluster-info
 ```
 
-Two nodes (one server + one agent) makes runbooks 15 (CNI race) and
-14 (SA recreation, with pod rescheduling) easier to demonstrate.
+Two nodes (one server + one agent) make runbooks 15 (CNI race) and 14 (SA recreation, with pod rescheduling) easier to demonstrate. The `--port '8081:80@loadbalancer'` mapping exposes the ingress controller on the host (`localhost:8081`) for the ingress runbook and is inert for all others, so this single cluster serves every runbook.
 
 ## 2. Install Linkerd Enterprise
 
@@ -56,7 +53,7 @@ linkerd check
 
 ## 3. Deploy the playground
 
-Chart and images are published as public OCI artifacts on GHCR.
+Chart and images are published as public OCI artifacts on GHCR:
 
 ```sh
 helm install demo \
@@ -70,11 +67,7 @@ kubectl -n playground rollout status \
   deploy/playground-client
 ```
 
-The `playground` namespace is annotated `linkerd.io/inject: enabled`, so all
-four deployments come up with a `linkerd-proxy` sidecar. **`playground-client`**
-is the always-on traffic generator, the meshed caller every runbook
-instruments, and **`playground-dashboard`** is the UI that shows its flow and
-owns the live config the generator pulls.
+The `playground` namespace is annotated `linkerd.io/inject: enabled`, so all four deployments start with a `linkerd-proxy` sidecar. **`playground-client`** is the always-on traffic generator that every runbook instruments. **`playground-dashboard`** is the UI that displays its traffic flow and owns the live config the generator reads.
 
 ## 4. Open the dashboard
 
@@ -83,17 +76,13 @@ kubectl -n playground port-forward svc/playground-dashboard 3000:3000
 open http://localhost:3000
 ```
 
-You should see a steady stream of green `200`s, ~few-millisecond latency, and
-an **mTLS** badge on every row of the "Recent samples" table. The Topology
-banner says `HTTP/1.1 · mTLS`. The `mtls verified` chip lights up green.
+You should see a steady stream of green `200`s, few-millisecond latency, and an **mTLS** badge on every row of the "Recent samples" table. The Topology banner reads `HTTP/1.1 · mTLS` and the `mtls verified` chip is green.
 
-When the proxy is bypassed (runbook 13) or mTLS breaks (runbook 14), the
-badge flips to **plain** and the protocol banner turns red. That's the
-visual signal you'll be teaching against.
+When the proxy is bypassed (runbook 13) or mTLS breaks (runbook 14), the badge flips to **plain** and the protocol banner turns red. This is the visual signal used throughout the runbooks.
 
 ## The diagnostic toolkit
 
-Every runbook uses the same five techniques:
+Every runbook uses these five techniques:
 
 ```sh
 # 1. Proxy metrics
@@ -143,8 +132,7 @@ kubectl -n playground rollout status \
   deploy/playground-client
 ```
 
-If a runbook leaves the cluster wedged (e.g. trust anchor mismatch), tear
-down and start over, that's faster than untangling:
+If a runbook leaves the cluster in a broken state (e.g. trust anchor mismatch), tear it down and start over rather than untangling:
 
 ```sh
 k3d cluster delete playground
