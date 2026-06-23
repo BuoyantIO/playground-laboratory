@@ -15,34 +15,89 @@ permissions:
   packages: write
 
 jobs:
-  publish-images:
-    name: Publish ${{ matrix.name }}
-    runs-on: ubuntu-latest
+  # Build each architecture on its OWN native runner and push by digest (no tag
+  # yet). This avoids QEMU emulation, whose arm64 Node/npm emulation crashes with
+  # "qemu: uncaught target signal 4 (Illegal instruction)" during `npm install`.
+  build-images:
+    name: Build ${{ matrix.image }} · ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    # arm64 builds on a native ARM runner. If that runner isn't available to the
+    # repo (e.g. a private repo without ARM-hosted runners), tolerate the failure
+    # and still ship an amd64-only release instead of blocking the whole release.
+    continue-on-error: ${{ matrix.arch == 'arm64' }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: app (dashboard + generator)
-            image: playground-app
-            context: client
-            build-args: ''
-          - name: server (http)
-            image: playground-server
-            context: server
-            build-args: |
-              CMD=http
+          - { image: playground-app,    context: client, build-args: '',        platform: linux/amd64, arch: amd64, runner: ubuntu-latest }
+          - { image: playground-app,    context: client, build-args: '',        platform: linux/arm64, arch: arm64, runner: ubuntu-24.04-arm }
+          - { image: playground-server, context: server, build-args: 'CMD=http', platform: linux/amd64, arch: amd64, runner: ubuntu-latest }
+          - { image: playground-server, context: server, build-args: 'CMD=http', platform: linux/arm64, arch: arm64, runner: ubuntu-24.04-arm }
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.tag || github.ref }}
 
+      - name: Resolve repo
+        run: echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          platforms: ${{ matrix.platform }}
+          build-args: ${{ matrix.build-args }}
+          provenance: false
+          cache-from: type=gha,scope=${{ matrix.image }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}-${{ matrix.arch }}
+          outputs: type=image,name=ghcr.io/${{ env.REPO_LC }}/${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ matrix.image }}-${{ matrix.arch }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # Combine the per-arch digests into one multi-arch manifest per image, tagged.
+  merge-images:
+    name: Publish ${{ matrix.image }}
+    needs: build-images
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [playground-app, playground-server]
+    steps:
       - name: Resolve version
         run: |
           VERSION="${{ inputs.tag || github.ref_name }}"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
-      - uses: docker/setup-qemu-action@v3
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digest-${{ matrix.image }}-*
+          merge-multiple: true
 
       - uses: docker/setup-buildx-action@v3
 
@@ -62,16 +117,21 @@ jobs:
             type=semver,pattern={{major}},value=${{ env.VERSION }}
             type=raw,value=latest
 
-      - uses: docker/build-push-action@v6
-        with:
-          context: ${{ matrix.context }}
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: ${{ matrix.build-args }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Create and push manifest list
+        working-directory: /tmp/digests
+        run: |
+          count=$(ls -1 | wc -l | tr -d ' ')
+          echo "Assembling ${{ matrix.image }} from ${count} architecture digest(s)."
+          if [ "$count" -lt 2 ]; then
+            echo "::warning::Only ${count} architecture(s) available for ${{ matrix.image }} — publishing a degraded (likely amd64-only) image."
+          fi
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf 'ghcr.io/${{ env.REPO_LC }}/${{ matrix.image }}@sha256:%s ' *)
+
+      - name: Inspect
+        run: |
+          docker buildx imagetools inspect "ghcr.io/${{ env.REPO_LC }}/${{ matrix.image }}:${{ env.VERSION }}"
 
   publish-chart:
     name: Publish Helm chart
