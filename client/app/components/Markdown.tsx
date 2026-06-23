@@ -132,12 +132,24 @@ function CopyButton({ text }: { text: string }) {
     try {
       await navigator.clipboard.writeText(text);
     } catch {
-      // Fallback for non-secure contexts.
+      // Fallback for non-secure contexts (e.g. the dashboard served over plain
+      // HTTP via Ingress, where navigator.clipboard is unavailable).
       const ta = document.createElement('textarea');
       ta.value = text;
+      ta.setAttribute('readonly', '');
+      // Pin the textarea to the current viewport so focusing/selecting it never
+      // scrolls the page. A bare `position: fixed` with no offsets keeps the
+      // element at its in-flow position, so select() jumps the panel to reveal it.
       ta.style.position = 'fixed';
+      ta.style.top = '0';
+      ta.style.left = '0';
+      ta.style.width = '1px';
+      ta.style.height = '1px';
+      ta.style.padding = '0';
+      ta.style.border = 'none';
       ta.style.opacity = '0';
       document.body.appendChild(ta);
+      ta.focus({ preventScroll: true });
       ta.select();
       try {
         document.execCommand('copy');
@@ -154,6 +166,10 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       type="button"
+      // Don't let the click focus the button: focusing a control inside the
+      // scrollable panel makes the browser scroll it into view, which reads as
+      // the panel jumping. The click still fires and copies.
+      onMouseDown={(e) => e.preventDefault()}
       onClick={copy}
       aria-label={label}
       title={label}
