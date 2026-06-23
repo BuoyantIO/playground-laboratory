@@ -131,7 +131,7 @@ jobs:
 
       - name: Inspect
         run: |
-          docker buildx imagetools inspect "ghcr.io/${{ env.REPO_LC }}/${{ matrix.image }}:${{ env.VERSION }}"
+          docker buildx imagetools inspect "ghcr.io/${{ env.REPO_LC }}/${{ matrix.image }}:${{ steps.meta.outputs.version }}"
 
   publish-chart:
     name: Publish Helm chart
