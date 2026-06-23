@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-// Injector applies playground-style faults — latency, errors, crashes,
-// readiness flaps — independent of the wire protocol the caller uses.
+// Injector applies playground-style faults - latency, errors, crashes,
+// readiness flaps - independent of the wire protocol the caller uses.
 type Injector struct {
 	LatencyMs          int
 	LatencyJitterMs    int

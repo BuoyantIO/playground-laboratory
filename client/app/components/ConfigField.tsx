@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 interface ConfigFieldProps {
   /** Short, prominent label rendered above the control. */
   label: string;
-  /** htmlFor target — must match the control's id. */
+  /** htmlFor target - must match the control's id. */
   htmlFor?: string;
   /** Optional helper text rendered below the control. */
   hint?: string;

@@ -47,9 +47,13 @@ let config: GeneratorConfig = envDefaults();
 let okCount = 0;
 let failCount = 0;
 
+const POD_NAME = process.env.HOSTNAME || 'playground-client';
+
 const scheduler = new Scheduler(
   () => performPingTo(resolveTarget(config.target), config.headers, FETCH_TIMEOUT_MS),
   (sample) => {
+    // Stamp the generator's own pod name so the dashboard can show it.
+    sample.clientPod = POD_NAME;
     if (sample.ok) okCount++;
     else failCount++;
     void pushSample(sample);
@@ -95,7 +99,7 @@ async function pullConfig(): Promise<void> {
       );
     }
   } catch {
-    // Dashboard unreachable — keep current config and keep generating.
+    // Dashboard unreachable - keep current config and keep generating.
   }
 }
 

@@ -16,7 +16,7 @@ const FIELD_CLASS =
 
 /**
  * Chooses which destination the generator hits: the apex Service (round-robin
- * across v1/v2), a per-role Service, or a custom URL — plus the request path.
+ * across v1/v2), a per-role Service, or a custom URL - plus the request path.
  * Selects commit immediately; text inputs commit on blur / Enter so we don't
  * thrash the target on every keystroke.
  */

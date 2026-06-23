@@ -9,7 +9,7 @@ export type SchedulerConfig = {
 };
 
 // Runs `concurrency` independent worker lanes. Each active lane performs a ping,
-// waits `pollIntervalMs`, and repeats — so the effective rate is roughly
+// waits `pollIntervalMs`, and repeats - so the effective rate is roughly
 // concurrency / interval. Lanes idle (no pings) while paused. Config can change
 // at any time; the worker count and cadence reconcile on the next loop turn.
 //

@@ -90,7 +90,14 @@ const en: Dict = {
   'table.mtls': 'mTLS',
   'table.servedBy': 'Served by',
   'table.body': 'Body',
+  'table.raw': 'Raw',
   'table.waiting': 'waiting for first response…',
+  'raw.title': 'Raw request',
+  'raw.encrypted':
+    'Encrypted on the wire (mTLS), AES-256-GCM ciphertext, unreadable to a network sniffer:',
+  'raw.plaintext':
+    'Sent in the clear (no mTLS), readable by anyone on the network:',
+  'raw.close': 'Close',
 
   'chart.collecting': 'collecting samples…',
   'chart.now': 'now',
@@ -212,7 +219,13 @@ const kr: Dict = {
   'table.mtls': 'mTLS',
   'table.servedBy': '처리한 노드',
   'table.body': '본문',
+  'table.raw': '원본',
   'table.waiting': '첫 응답을 기다리는 중…',
+  'raw.title': '원본 요청',
+  'raw.encrypted':
+    '전송 구간 암호화됨 (mTLS), AES-256-GCM 암호문, 네트워크 스니퍼는 읽을 수 없음:',
+  'raw.plaintext': '평문 전송 (mTLS 없음), 네트워크의 누구나 읽을 수 있음:',
+  'raw.close': '닫기',
 
   'chart.collecting': '샘플을 수집하는 중…',
   'chart.now': '현재',

@@ -40,12 +40,12 @@ export function TutorialView({ meta, content, prev, next }: TutorialViewProps) {
         {prev ? (
           <Link
             href={`/tutorials/${prev.slug}`}
-            className="group flex flex-col gap-1 rounded-card border border-navy-10 bg-white px-5 py-4 transition hover:border-navy-40 md:max-w-[48%]"
+            className="group flex flex-col gap-1 rounded-card border border-navy-10 bg-white px-5 py-4 transition hover:border-navy-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric/40 focus-visible:ring-offset-2 md:max-w-[48%]"
           >
             <span className="font-mono text-xs uppercase tracking-[0.18em] text-navy-50">
               ← {t('tutorials.previous')}
             </span>
-            <span className="font-sans text-sm font-semibold text-navy group-hover:text-electric">
+            <span className="font-sans text-sm font-semibold text-navy group-hover:text-navy-90">
               {prev.title[lang]}
             </span>
           </Link>
@@ -55,12 +55,12 @@ export function TutorialView({ meta, content, prev, next }: TutorialViewProps) {
         {next ? (
           <Link
             href={`/tutorials/${next.slug}`}
-            className="group flex flex-col gap-1 rounded-card border border-navy-10 bg-white px-5 py-4 text-right transition hover:border-navy-40 md:max-w-[48%]"
+            className="group flex flex-col gap-1 rounded-card border border-navy-10 bg-white px-5 py-4 text-right transition hover:border-navy-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric/40 focus-visible:ring-offset-2 md:max-w-[48%]"
           >
             <span className="font-mono text-xs uppercase tracking-[0.18em] text-navy-50">
               {t('tutorials.next')} →
             </span>
-            <span className="font-sans text-sm font-semibold text-navy group-hover:text-electric">
+            <span className="font-sans text-sm font-semibold text-navy group-hover:text-navy-90">
               {next.title[lang]}
             </span>
           </Link>

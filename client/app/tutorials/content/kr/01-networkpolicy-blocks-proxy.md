@@ -205,17 +205,18 @@ kubectl -n playground delete pod netshoot
 
 메시 파드의 트래픽 흐름:
 
-```
-client pod                                       server pod
-┌──────────────┐                            ┌─────────────────────┐
-│ app          │                            │ app  :8080 (lo only)│
-│  │           │                            │  ▲                  │
-│  ▼ localhost │                            │  │ localhost        │
-│ proxy(out)   │ ─── mTLS ───────► proxy(in):4143                  │
-└──────────────┘                            └─────────────────────┘
+```mermaid
+flowchart LR
+  subgraph client["client pod"]
+    CA["app"] -->|localhost| CP["proxy (out)"]
+  end
+  subgraph server["server pod"]
+    SP["proxy (in) :4143"] -->|localhost| SA["app :8080 (lo only)"]
+  end
+  CP -->|mTLS| SP
 ```
 
-`linkerd-init`(또는 linkerd-cni 플러그인)이 설치하는 iptables 규칙은 파드의 모든 비루프백 인바운드 트래픽을 `:4143`의 프록시로 리다이렉트합니다. 앱은 루프백에서만 수신합니다. `:4143`을 막으면 프록시가 연결을 받아들일 수 없어 아웃바운드 측은 ECONNREFUSED를 봅니다. 런북 03과 동일한 코드 경로지만, 근본 원인은 다릅니다.
+`linkerd-init`(또는 linkerd-cni 플러그인)이 설치하는 iptables 규칙은 파드의 모든 비루프백 인바운드 트래픽을 `:4143`의 프록시로 리다이렉트합니다. 앱은 루프백에서만 수신합니다. `:4143`을 막으면 프록시가 연결을 받아들일 수 없어 아웃바운드 측은 ECONNREFUSED를 봅니다. 일반적인 연결 거부와 동일한 코드 경로지만, 근본 원인은 다릅니다.
 
 ## 진단
 

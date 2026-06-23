@@ -12,7 +12,7 @@ export async function GET(
   _req: Request,
   { params }: { params: { slug: string } },
 ) {
-  // Validate against the known list — also prevents path traversal via slug.
+  // Validate against the known list - also prevents path traversal via slug.
   if (!findTutorial(params.slug)) {
     return new NextResponse(null, { status: 404 });
   }

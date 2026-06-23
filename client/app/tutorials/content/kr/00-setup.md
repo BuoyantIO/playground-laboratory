@@ -2,6 +2,20 @@
 
 이 디렉터리의 모든 런북은 Linkerd Enterprise(BEL)가 설치된 새 k3d 클러스터를 전제합니다. 이 파일이 정식 설치 가이드이며, 각 런북의 "## Setup" 섹션은 이 문서를 참조합니다.
 
+## 한눈에 보는 메시
+
+모든 튜토리얼은 이 토폴로지를 기준으로 진행됩니다. 두 개의 메시된 앱이 mTLS로 통신하고, 컨트롤 플레인이 각 프록시에 인증서와 엔드포인트를 발급합니다:
+
+```mermaid
+flowchart LR
+  C["playground-client (+proxy)"] -->|mTLS| P["server primary v1 (+proxy)"]
+  C -->|mTLS| Q["server canary v2 (+proxy)"]
+  C -. samples .-> D["playground-dashboard"]
+  CP["control plane: destination + identity"] -. certs + endpoints .-> C
+  CP -.-> P
+  CP -.-> Q
+```
+
 ## 머신 사전 준비물
 
 ```sh
@@ -33,7 +47,7 @@ k3d cluster create playground \
 kubectl cluster-info
 ```
 
-노드 두 개(서버 1개 + 에이전트 1개)는 런북 15(CNI 경합)와 14(SA 재생성, 파드 재스케줄) 시연에 필요합니다. `--port '8081:80@loadbalancer'`는 ingress 런북용으로 ingress 컨트롤러를 `localhost:8081`에 노출하며, 다른 런북에는 영향이 없어 이 클러스터 하나로 모든 런북을 진행할 수 있습니다.
+노드 두 개(서버 1개 + 에이전트 1개)는 CNI 경합과 SA 재생성(파드 재스케줄) 시나리오 시연에 유용합니다. `--port '8081:80@loadbalancer'`는 ingress 런북용으로 ingress 컨트롤러를 `localhost:8081`에 노출하며, 다른 런북에는 영향이 없어 이 클러스터 하나로 모든 런북을 진행할 수 있습니다.
 
 ## 2. Linkerd Enterprise 설치
 
@@ -78,7 +92,7 @@ open http://localhost:3000
 
 녹색 `200`이 일정하게 흐르고, 지연은 수 밀리초 수준이며, "Recent samples" 테이블의 모든 행에 **mTLS** 배지가 표시됩니다. Topology 배너에는 `HTTP/1.1 · mTLS`가 나타나고 `mtls verified` 칩이 녹색으로 켜집니다.
 
-프록시가 우회되거나(런북 13) mTLS가 깨지면(런북 14) 배지는 **plain**으로 바뀌고 프로토콜 배너는 빨간색이 됩니다. 이것이 수업에서 활용하는 시각적 신호입니다.
+프록시가 우회되거나 mTLS가 깨지면 배지는 **plain**으로 바뀌고 프로토콜 배너는 빨간색이 됩니다. 이것이 수업에서 활용하는 시각적 신호입니다.
 
 ## 진단 도구 모음
 
@@ -89,6 +103,9 @@ open http://localhost:3000
 linkerd diagnostics proxy-metrics -n playground deploy/playground-client
 kubectl port-forward -n playground deploy/playground-client 4191
 curl localhost:4191/metrics
+# ...또는 파드 내부에서 필터링:
+kubectl -n playground exec deploy/playground-client -c linkerd-proxy -- \
+  curl -s http://localhost:4191/metrics | grep -E 'failfast|response_total|endpoints'
 
 # 2. 프록시 로그
 kubectl logs -n playground deploy/playground-client -c linkerd-proxy --tail=50 -f
@@ -96,10 +113,6 @@ kubectl logs -n playground deploy/playground-client -c linkerd-proxy --tail=50 -
 # 3. 런타임에 프록시 로그 레벨 올리기 (재시작 불필요). 기본은 "info".
 kubectl port-forward -n playground deploy/playground-client 4191
 curl -v --data 'linkerd=debug' -X PUT localhost:4191/proxy-log-level
-
-# 3. 프록시 메트릭
-kubectl -n playground exec deploy/playground-client -c linkerd-proxy -- \
-  curl -s http://localhost:4191/metrics | grep -E 'failfast|response_total|endpoints'
 
 # 4. 엔드포인트 멤버십
 linkerd diagnostics endpoints playground-server-http.playground.svc.cluster.local:8080

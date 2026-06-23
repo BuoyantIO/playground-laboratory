@@ -16,8 +16,8 @@ const INPUT_CLASS =
 
 /**
  * Edits the custom request headers attached to every generated request (e.g.
- * Host, l5d-dst-override). Rows commit on blur / add / remove — not on every
- * keystroke — so we don't POST a half-typed header.
+ * Host, l5d-dst-override). Rows commit on blur / add / remove - not on every
+ * keystroke - so we don't POST a half-typed header.
  */
 export function HeadersControl({ headers, onChange }: HeadersControlProps) {
   const { t } = useTranslation();

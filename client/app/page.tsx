@@ -76,14 +76,19 @@ export default function Home() {
       <Nav />
       <AnnouncementBar />
 
-      <div className="flex flex-col lg:flex-row">
-        {/* Center: the live visualization (DOM-first so mobile shows it first). */}
-        <div className="min-w-0 flex-1 lg:order-2">
+      {/* Center: the live visualization - full-width; the panels overlay it. */}
+      <div className="min-w-0">
+        <div>
           <Hero />
 
-          <main className="mx-auto max-w-5xl px-6 py-12 md:px-10 md:py-14">
+          <main className="mx-auto max-w-6xl px-6 py-12 md:px-10 md:py-14">
             <SectionLabel>{t('section.live')}</SectionLabel>
-            <Topology samples={samples} counters={counters} upstream={upstream} />
+            <Topology
+              samples={samples}
+              counters={counters}
+              upstream={upstream}
+              concurrency={config.concurrency}
+            />
 
             <SectionLabel className="mt-14">{t('section.latency')}</SectionLabel>
             <LatencyChart samples={samples} />
@@ -99,93 +104,93 @@ export default function Home() {
             </SectionLabel>
             <SamplesTable samples={samples} />
 
-            <Footer pollIntervalMs={effectiveInterval} />
+            <Footer />
           </main>
         </div>
 
-        {/* Left: generator controls (collapsible). */}
-        {controlsOpen && (
-          <aside className="shrink-0 border-t border-navy-10 bg-navy-2 lg:order-1 lg:sticky lg:top-[100px] lg:h-[calc(100vh-100px)] lg:w-80 lg:overflow-y-auto lg:border-r lg:border-t-0">
-            <div className="px-5 py-6 md:px-6">
-              <div className="flex items-start justify-between gap-2">
-                <h2 className="font-sans text-xs font-semibold uppercase tracking-[0.14em] text-navy-60">
-                  {t('config.title')}
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setControls(false)}
-                  aria-label={t('controls.collapse')}
-                  title={t('controls.collapse')}
-                  className="shrink-0 rounded-md border border-navy-20 px-2.5 py-1 font-mono text-sm leading-none text-navy-60 transition hover:bg-navy-5 hover:text-navy"
-                >
-                  ‹
-                </button>
-              </div>
-              <p className="mt-1 font-mono text-xs leading-relaxed text-navy-50">
-                {t('config.description')}
-              </p>
-              <div className="mt-5 flex flex-col gap-5">
-                <PollingControl
-                  pollIntervalMs={effectiveInterval}
-                  onChange={(ms) =>
-                    setConfig({ pollIntervalMs: ms, pollEnabled: ms > 0 })
-                  }
-                />
-                <ConcurrencyControl
-                  concurrency={config.concurrency}
-                  onChange={(n) => setConfig({ concurrency: n })}
-                />
-                <TargetControl
-                  target={config.target}
-                  onChange={(patch) =>
-                    setConfig({ target: { ...config.target, ...patch } })
-                  }
-                />
-                <HeadersControl
-                  headers={config.headers}
-                  onChange={(headers) => setConfig({ headers })}
-                />
-              </div>
-            </div>
-          </aside>
-        )}
-
-        {/* Right: tutorial panel: 39% split on large screens, full-screen
-            overlay on small ones, with a shadow to separate it. */}
-        {panelOpen && (
-          <aside className="fixed inset-0 z-50 w-full bg-white lg:static lg:z-auto lg:order-3 lg:w-[39%] lg:shrink-0 lg:border-l lg:border-navy-10 lg:shadow-[-14px_0_36px_-18px_rgba(2,12,27,0.22)]">
-            <div className="h-full lg:sticky lg:top-[100px] lg:h-[calc(100vh-100px)]">
-              <TutorialPanel
-                slug={slug}
-                onSlugChange={changeSlug}
-                onClose={() => setOpen(false)}
+        {/* Left: generator controls - overlay drawer; slides over the body
+            instead of compressing it. */}
+        <aside
+          className={`fixed bottom-0 left-0 top-[100px] z-40 w-80 max-w-[88vw] overflow-y-auto border-r border-navy-10 bg-navy-3 shadow-[14px_0_36px_-18px_rgba(2,12,27,0.22)] transition-transform duration-300 ease-in-out ${
+            controlsOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <div className="px-5 py-6 md:px-6">
+            <h2 className="font-sans text-xs font-semibold uppercase tracking-[0.14em] text-navy-60">
+              {t('config.title')}
+            </h2>
+            <p className="mt-1 font-mono text-xs leading-relaxed text-navy-50">
+              {t('config.description')}
+            </p>
+            <div className="mt-5 flex flex-col gap-5">
+              <PollingControl
+                pollIntervalMs={effectiveInterval}
+                onChange={(ms) =>
+                  setConfig({ pollIntervalMs: ms, pollEnabled: ms > 0 })
+                }
+              />
+              <ConcurrencyControl
+                concurrency={config.concurrency}
+                onChange={(n) => setConfig({ concurrency: n })}
+              />
+              <TargetControl
+                target={config.target}
+                onChange={(patch) =>
+                  setConfig({ target: { ...config.target, ...patch } })
+                }
+              />
+              <HeadersControl
+                headers={config.headers}
+                onChange={(headers) => setConfig({ headers })}
               />
             </div>
-          </aside>
-        )}
+          </div>
+        </aside>
+
+        {/* Right: tutorial panel - overlay drawer; slides over the body. */}
+        <aside
+          className={`fixed bottom-0 right-0 top-[100px] z-40 w-full bg-white shadow-[-14px_0_36px_-18px_rgba(2,12,27,0.22)] transition-transform duration-300 ease-in-out lg:w-[39vw] ${
+            panelOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
+          <TutorialPanel slug={slug} onSlugChange={changeSlug} />
+        </aside>
       </div>
 
-      {/* Left-edge tab to reveal the generator controls when collapsed. */}
-      {!controlsOpen && (
-        <button
-          type="button"
-          onClick={() => setControls(true)}
-          className="fixed left-0 top-1/2 z-40 -translate-y-1/2 rounded-r-lg border border-l-0 border-navy-10 bg-white px-2 py-5 font-mono text-[11px] uppercase tracking-[0.18em] text-navy-60 shadow-md transition hover:text-navy [writing-mode:vertical-rl]"
-        >
-          {t('controls.open')}
-        </button>
-      )}
+      {/* Controls toggle: one vertically-centered tab that slides to the panel
+          edge when open, so collapse sits exactly where expand appears. */}
+      <button
+        type="button"
+        onClick={() => setControls(!controlsOpen)}
+        aria-label={controlsOpen ? t('controls.collapse') : t('controls.open')}
+        title={controlsOpen ? t('controls.collapse') : t('controls.open')}
+        className={`fixed top-1/2 z-[60] -translate-y-1/2 rounded-r-lg border border-l-0 border-navy-10 bg-white px-2 py-5 font-mono text-[11px] uppercase leading-none tracking-[0.18em] text-navy-60 shadow-md transition-[left] duration-300 ease-in-out hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric/60 ${
+          controlsOpen ? 'left-80' : 'left-0'
+        }`}
+      >
+        {controlsOpen ? (
+          <span aria-hidden className="block text-base">‹</span>
+        ) : (
+          <span className="[writing-mode:vertical-rl]">{t('controls.open')}</span>
+        )}
+      </button>
 
-      {/* Right-edge tab to reveal the tutorial panel when collapsed. */}
-      {!panelOpen && (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="fixed right-0 top-1/2 z-40 -translate-y-1/2 rounded-l-lg border border-r-0 border-navy-10 bg-white px-2 py-5 font-mono text-[11px] uppercase tracking-[0.18em] text-navy-60 shadow-md transition hover:text-navy [writing-mode:vertical-rl]"
-        >
-          {t('panel.open')}
-        </button>
-      )}
+      {/* Tutorial toggle: mirrors the controls toggle on the right edge. */}
+      <button
+        type="button"
+        onClick={() => setOpen(!panelOpen)}
+        aria-label={panelOpen ? t('panel.collapse') : t('panel.open')}
+        title={panelOpen ? t('panel.collapse') : t('panel.open')}
+        className={`fixed top-1/2 z-[60] -translate-y-1/2 rounded-l-lg border border-r-0 border-navy-10 bg-white px-2 py-5 font-mono text-[11px] uppercase leading-none tracking-[0.18em] text-navy-60 shadow-md transition-[right] duration-300 ease-in-out hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric/60 ${
+          panelOpen ? 'right-0 lg:right-[39vw]' : 'right-0'
+        }`}
+      >
+        {panelOpen ? (
+          <span aria-hidden className="block text-base">›</span>
+        ) : (
+          <span className="[writing-mode:vertical-rl]">{t('panel.open')}</span>
+        )}
+      </button>
     </div>
   );
 }

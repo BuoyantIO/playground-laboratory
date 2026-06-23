@@ -1,4 +1,4 @@
-# 08 - HTTP 포트를 opaque로 잘못 표시하면 라우팅이 조용히 비활성화된다
+# 07 - HTTP 포트를 opaque로 잘못 표시하면 라우팅이 조용히 비활성화된다
 
 Linkerd의 프로토콜 감지는 연결의 처음 몇 바이트를 보고 HTTP/1, HTTP/2
 (gRPC), opaque TCP 중 하나로 처리 방식을 결정합니다. `config.linkerd.io/opaque-ports`
@@ -172,7 +172,7 @@ EOF
 
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.5 --reuse-values \
+  --version 1.1.0 --reuse-values \
   --set http.primary.env.LATENCY_MS=2000 \
   --set http.canary.env.LATENCY_MS=2000
 ```
@@ -187,7 +187,7 @@ kubectl -n playground annotate svc playground-server-http \
 kubectl -n playground delete httproute playground-server-http-timeout --ignore-not-found
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.5 --reuse-values \
+  --version 1.1.0 --reuse-values \
   --set http.primary.env.LATENCY_MS=0 \
   --set http.canary.env.LATENCY_MS=0
 kubectl -n playground rollout restart deploy/playground-client
@@ -202,7 +202,7 @@ kubectl -n playground rollout restart deploy/playground-client
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.5 --reuse-values \
+  --version 1.1.0 --reuse-values \
   --set-string 'http.primary.podAnnotations.config\.linkerd\.io/opaque-ports=8080' \
   --set-string 'http.canary.podAnnotations.config\.linkerd\.io/opaque-ports=8080'
 kubectl -n playground rollout status \
@@ -328,7 +328,7 @@ linkerd diagnostics proxy-metrics -n playground pod/"$POD" \
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.5 --reset-values
+  --version 1.1.0 --reset-values
 kubectl -n playground annotate svc playground-server-http \
   config.linkerd.io/opaque-ports- --overwrite || true
 kubectl -n playground rollout restart \

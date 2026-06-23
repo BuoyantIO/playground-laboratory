@@ -35,7 +35,7 @@ export function VersionPill({ version }: { version?: string }) {
     <span
       className={`inline-flex items-center gap-1.5 rounded-button px-2.5 py-0.5 text-xs font-semibold ${colorClass}`}
     >
-      {v || '—'}
+      {v || '-'}
     </span>
   );
 }
@@ -53,7 +53,7 @@ export function MeshPill({ clientId }: { clientId?: string }) {
       <span
         className={`h-1.5 w-1.5 rounded-full ${meshed ? 'bg-green' : 'bg-red'}`}
       />
-      {meshed ? 'mTLS' : 'plain'}
+      {meshed ? 'mTLS' : 'plaintext'}
     </span>
   );
 }

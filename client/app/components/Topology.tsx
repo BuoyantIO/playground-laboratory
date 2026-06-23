@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { STALE_SAMPLE_MS } from '../lib/constants';
 import { useTranslation } from '../lib/i18n';
 import type { Counters, Sample } from '../lib/types';
@@ -10,10 +10,12 @@ export function Topology({
   samples,
   counters,
   upstream,
+  concurrency,
 }: {
   samples: Sample[];
   counters: Counters;
   upstream: string;
+  concurrency: number;
 }) {
   const { t } = useTranslation();
   const latest = samples[0];
@@ -51,7 +53,7 @@ export function Topology({
       : 'HTTP/1.1 · plaintext'
     : 'HTTP/1.1';
 
-  // Geometry — client left, fork in the middle, two servers on the right.
+  // Geometry - client left, fork in the middle, two servers on the right.
   const W = 480;
   const H = 200;
   const clientX = 8;
@@ -64,13 +66,22 @@ export function Topology({
   const pulseDestX = serverX - 4;
   const pulseDestY = yTarget;
 
+  // How many in-flight request "lanes" to animate as a staggered train, so the
+  // concurrency setting is visible in the flow (capped to keep it readable).
+  const laneCount = Math.min(Math.max(1, Math.round(concurrency)), 6);
+
+  // Most-recent serving pod per version (and the client pod), so the nodes show
+  // real pod names instead of generic labels.
+  const v1Pod = samples.find((s) => s.appVersion === 'v1' && s.servedBy)?.servedBy;
+  const v2Pod = samples.find((s) => s.appVersion === 'v2' && s.servedBy)?.servedBy;
+  const clientPod = samples.find((s) => s.clientPod)?.clientPod;
+
   return (
     <div className="overflow-hidden rounded-card border border-gray1 bg-white">
       <div className="grid grid-cols-1 gap-6 px-6 py-8 md:grid-cols-[1fr_2fr_1fr] md:items-center md:gap-4 md:px-10 md:py-10">
         <Node
-          title={t('topology.generator')}
+          title={clientPod || 'playground-client'}
           subtitle={t('topology.generatorSub')}
-          tag="playground-client"
           variant="outline"
           glowKey={total}
         />
@@ -121,22 +132,22 @@ export function Topology({
             {/* Protocol pill on the trunk */}
             <g>
               <rect
-                x={(clientX + forkX) / 2 - 95}
-                y={yMid - 16}
-                width="190"
-                height="32"
-                rx="16"
+                x={(clientX + forkX) / 2 - 108}
+                y={yMid - 19}
+                width="216"
+                height="38"
+                rx="19"
                 fill={meshed || !latest ? '#003359' : '#5a1626'}
               />
               <text
                 x={(clientX + forkX) / 2}
-                y={yMid + 4}
+                y={yMid + 6}
                 textAnchor="middle"
                 fill={meshed || !latest ? '#64f9bf' : '#ff7490'}
                 style={{
                   fontFamily: 'Inconsolata, monospace',
-                  fontSize: '13px',
-                  fontWeight: 600,
+                  fontSize: '17px',
+                  fontWeight: 700,
                   letterSpacing: '0.04em',
                 }}
               >
@@ -167,29 +178,31 @@ export function Topology({
               }
             />
 
-            {/* GET / label */}
+            {/* GET / label, with the live lane count (= concurrency) */}
             <text
               x={(clientX + forkX) / 2}
-              y={yMid - 24}
+              y={yMid - 28}
               textAnchor="middle"
-              fill="#4d708b"
-              style={{
-                fontFamily: 'Inconsolata, monospace',
-                fontSize: '12px',
-              }}
+              style={{ fontFamily: 'Inconsolata, monospace', fontSize: '16px' }}
             >
-              GET /
+              <tspan fill="#4d708b">GET /</tspan>
+              {concurrency > 1 && (
+                <tspan fill="#003359" fontWeight={700}>
+                  {'  ·  ×'}
+                  {concurrency} lanes
+                </tspan>
+              )}
             </text>
 
             {/* Status / latency label under the trunk */}
             <text
               x={(clientX + forkX) / 2}
-              y={yMid + 35}
+              y={yMid + 38}
               textAnchor="middle"
               fill="#8099ac"
               style={{
                 fontFamily: 'Inconsolata, monospace',
-                fontSize: '12px',
+                fontSize: '16px',
               }}
             >
               {latest
@@ -204,34 +217,35 @@ export function Topology({
             ].map(b => (
               <g key={b.label}>
                 <rect
-                  x={serverX - 36}
-                  y={b.y - 11}
-                  width="36"
-                  height="22"
-                  rx="11"
+                  x={serverX - 48}
+                  y={b.y - 14}
+                  width="48"
+                  height="28"
+                  rx="14"
                   fill={b.active ? '#003359' : '#e5ebee'}
                 />
                 <text
-                  x={serverX - 18}
-                  y={b.y + 4}
+                  x={serverX - 24}
+                  y={b.y + 5}
                   textAnchor="middle"
                   fill={b.active ? '#64f9bf' : '#4d708b'}
                   style={{
                     fontFamily: 'Inconsolata, monospace',
-                    fontSize: '11px',
-                    fontWeight: 600,
+                    fontSize: '15px',
+                    fontWeight: 700,
                   }}
                 >
                   {b.label}
                 </text>
                 <text
-                  x={serverX - 18}
-                  y={b.y + 26}
+                  x={serverX - 24}
+                  y={b.y + 32}
                   textAnchor="middle"
-                  fill="#8099ac"
+                  fill="#66859b"
                   style={{
                     fontFamily: 'Inconsolata, monospace',
-                    fontSize: '10px',
+                    fontSize: '13px',
+                    fontWeight: 600,
                   }}
                 >
                   {b.count}
@@ -239,95 +253,99 @@ export function Topology({
               </g>
             ))}
 
-            {/* Pulse from client to the targeted version */}
-            {latest && (
-              <g
-                key={`${total}-${targetVersion}`}
-                className="pulse-travel"
-                style={{
-                  ['--fork-x' as string]: `${forkX - clientX}px`,
-                  ['--travel-x' as string]: `${pulseDestX - clientX}px`,
-                  ['--travel-y' as string]: `${pulseDestY - yMid}px`,
-                }}
-              >
-                <circle cx={clientX} cy={yMid} r="5" fill={pulseColor} />
-                <circle cx={clientX} cy={yMid} r="9" fill={pulseColor} opacity="0.25" />
-              </g>
-            )}
+            {/* Pulses from client to the targeted version - one per lane, in a
+                staggered train so higher concurrency reads as busier traffic. */}
+            {latest &&
+              Array.from({ length: laneCount }).map((_, i) => (
+                <g
+                  key={`${total}-${targetVersion}-${i}`}
+                  className="pulse-travel"
+                  style={{
+                    ['--fork-x' as string]: `${forkX - clientX}px`,
+                    ['--travel-x' as string]: `${pulseDestX - clientX}px`,
+                    ['--travel-y' as string]: `${pulseDestY - yMid}px`,
+                    animationDelay: `${i * 0.11}s`,
+                  }}
+                >
+                  <circle cx={clientX} cy={yMid} r="5" fill={pulseColor} />
+                  <circle cx={clientX} cy={yMid} r="9" fill={pulseColor} opacity="0.25" />
+                </g>
+              ))}
           </svg>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex min-w-0 flex-col gap-3">
           <Node
-            title={t('topology.serverV1')}
-            subtitle={
-              latest?.appVersion === 'v1' && latest?.servedBy
-                ? t('topology.pod', { name: latest.servedBy })
-                : 'playground-server-http-primary'
-            }
-            tag={`playground-server-http · v1 · ${t('topology.hits', { n: v1Count })}`}
+            title={v1Pod || 'playground-server-http-primary'}
+            subtitle="primary · v1"
+            tag={t('topology.hits', { n: v1Count })}
             variant={targetVersion === 'v1' ? 'solid' : 'outline'}
             glowKey={v1Count}
           />
           <Node
-            title={t('topology.serverV2')}
-            subtitle={
-              latest?.appVersion === 'v2' && latest?.servedBy
-                ? t('topology.pod', { name: latest.servedBy })
-                : 'playground-server-http-canary'
-            }
-            tag={`playground-server-http · v2 · ${t('topology.hits', { n: v2Count })}`}
+            title={v2Pod || 'playground-server-http-canary'}
+            subtitle="canary · v2"
+            tag={t('topology.hits', { n: v2Count })}
             variant={targetVersion === 'v2' ? 'solid' : 'outline'}
             glowKey={v2Count}
           />
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-7 gap-y-2.5 border-t border-gray1 bg-navy-3 px-6 py-4 font-mono text-xs text-navy-60 md:px-10">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-gray1 bg-navy-3 px-6 py-3.5 font-mono text-xs text-navy-70 md:px-10">
         {liveness && (
           <>
-            <span>
-              {t('topology.genLabel')}{' '}
-              <span className={liveness.live ? 'text-green' : 'text-red'}>
-                {liveness.text}
-              </span>
-            </span>
-            <span className="text-navy-30">·</span>
+            <Metric label={t('topology.genLabel')}>
+              <Dotted live={liveness.live}>{liveness.text}</Dotted>
+            </Metric>
+            <Sep />
           </>
         )}
-        <span>
-          upstream <span className="text-navy">{upstream || '—'}</span>
-        </span>
-        <span className="text-navy-30">·</span>
-        <span>
-          mtls{' '}
-          <span className={meshed ? 'text-green' : 'text-red'}>
-            {!latest ? '—' : meshed ? t('topology.verified') : t('topology.absent')}
+        <Metric label="lanes">
+          <span className="text-navy">×{concurrency}</span>
+        </Metric>
+        <Sep />
+        <Metric label="upstream">
+          <span
+            className="inline-block max-w-[20rem] truncate align-bottom text-navy"
+            title={upstream || undefined}
+          >
+            {upstream || '-'}
           </span>
-        </span>
-        <span className="text-navy-30">·</span>
-        <span>
-          client-id{' '}
-          <span className="text-navy truncate">
-            {latest?.meshClientId || '—'}
+        </Metric>
+        <Sep />
+        <Metric label="wire">
+          {!latest ? (
+            <span className="text-navy-40">-</span>
+          ) : (
+            <Dotted live={meshed}>{meshed ? 'mTLS' : 'plaintext'}</Dotted>
+          )}
+        </Metric>
+        <Sep />
+        <Metric label="client-id">
+          <span
+            className="inline-block max-w-[11rem] truncate align-bottom text-navy"
+            title={latest?.meshClientId || undefined}
+          >
+            {latest?.meshClientId || '-'}
           </span>
-        </span>
-        <span className="text-navy-30">·</span>
-        <span>
-          v1 <span className="text-navy">{v1Count}</span>
-        </span>
-        <span className="text-navy-30">·</span>
-        <span>
-          v2 <span className="text-navy">{v2Count}</span>
-        </span>
-        <span className="text-navy-30">·</span>
-        <span>
-          ok <span className="text-green">{okCount}</span>
-        </span>
-        <span className="text-navy-30">·</span>
-        <span>
-          fail <span className="text-red">{failCount}</span>
-        </span>
+        </Metric>
+        <Sep />
+        <Metric label="v1">
+          <span className="text-navy">{v1Count}</span>
+        </Metric>
+        <Metric label="v2">
+          <span className="text-navy">{v2Count}</span>
+        </Metric>
+        <Sep />
+        <Metric label="ok">
+          <span className="text-green">{okCount}</span>
+        </Metric>
+        <Metric label="fail">
+          <span className={failCount ? 'text-red' : 'text-navy-40'}>
+            {failCount}
+          </span>
+        </Metric>
       </div>
     </div>
   );
@@ -342,7 +360,7 @@ function Node({
 }: {
   title: string;
   subtitle: string;
-  tag: string;
+  tag?: string;
   variant: 'solid' | 'outline';
   glowKey: number;
 }) {
@@ -350,7 +368,7 @@ function Node({
   return (
     <div
       key={glowKey}
-      className={`node-glow flex items-center gap-4 rounded-card px-5 py-4 ${
+      className={`node-glow flex min-w-0 items-center gap-4 rounded-card px-5 py-4 ${
         solid ? 'bg-navy text-white' : 'border border-navy bg-white text-navy'
       }`}
     >
@@ -366,7 +384,9 @@ function Node({
         )}
       </div>
       <div className="min-w-0">
-        <div className="font-sans text-sm font-semibold">{title}</div>
+        <div className="break-words font-mono text-[13px] font-semibold leading-tight">
+          {title}
+        </div>
         <div
           className={`truncate font-mono text-xs ${
             solid ? 'text-white/60' : 'text-navy-60'
@@ -374,14 +394,46 @@ function Node({
         >
           {subtitle}
         </div>
-        <div
-          className={`mt-1.5 inline-block max-w-full truncate whitespace-nowrap rounded-full px-2 py-0.5 font-mono text-[10px] ${
-            solid ? 'bg-white/10 text-white/80' : 'bg-navy-5 text-navy-70'
-          }`}
-        >
-          {tag}
-        </div>
+        {tag && (
+          <div
+            className={`mt-1.5 inline-block max-w-full truncate whitespace-nowrap rounded-full px-2 py-0.5 font-mono text-[11px] ${
+              solid ? 'bg-white/10 text-white/80' : 'bg-navy-5 text-navy-70'
+            }`}
+          >
+            {tag}
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+// A single label/value unit in the status strip: a small muted uppercase label
+// followed by its (stronger-weight) value.
+function Metric({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <span className="inline-flex items-baseline gap-1.5 whitespace-nowrap">
+      <span className="text-[10px] uppercase tracking-[0.12em] text-navy-40">
+        {label}
+      </span>
+      <span className="font-medium">{children}</span>
+    </span>
+  );
+}
+
+// Thin vertical divider between status-strip groups.
+function Sep() {
+  return <span className="h-3.5 w-px shrink-0 bg-navy-10" aria-hidden />;
+}
+
+// Value with a leading status dot, green when live/verified, red otherwise.
+function Dotted({ live, children }: { live: boolean; children: ReactNode }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 ${live ? 'text-green' : 'text-red'}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${live ? 'bg-green' : 'bg-red'}`} />
+      {children}
+    </span>
   );
 }

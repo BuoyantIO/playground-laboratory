@@ -27,7 +27,7 @@ Set the startup-failure knob (see
 helm uninstall demo
 helm install demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.11 \
+  --version 1.1.0 \
   --set http.primary.env.FAIL_ON_STARTUP=true \
   --set http.canary.env.FAIL_ON_STARTUP=true
 kubectl -n playground rollout status \
@@ -116,7 +116,7 @@ kubectl -n playground get endpointslices \
 linkerd diagnostics endpoints playground-server-http.playground.svc.cluster.local:8080
 # No endpoints found.
 
-5. 
+# 5. Outbound balancer has zero endpoints and the error counter is flat:
 POD=$(kubectl -n playground get pod -l app=playground-client \
         -o jsonpath='{.items[0].metadata.name}')
 linkerd diagnostics proxy-metrics -n playground pod/"$POD" \
@@ -132,7 +132,7 @@ Stop the crashes on both versions:
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.11 --reuse-values \
+  --version 1.1.0 --reuse-values \
   --set http.primary.env.FAIL_ON_STARTUP=false \
   --set http.canary.env.FAIL_ON_STARTUP=false
 kubectl -n playground rollout restart \
@@ -153,7 +153,7 @@ Common real-world causes:
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.11 --reset-values
+  --version 1.1.0 --reset-values
 kubectl -n playground rollout status \
   deploy/playground-server-http-primary deploy/playground-server-http-canary
 ```

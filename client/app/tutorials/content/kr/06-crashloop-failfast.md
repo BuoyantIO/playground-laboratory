@@ -20,7 +20,7 @@ readiness 깜빡임의 극단적 형태입니다. 서버가 시작 시점에 크
 helm uninstall demo
 helm install demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.11 \
+  --version 1.1.0 \
   --set http.primary.env.FAIL_ON_STARTUP=true \
   --set http.canary.env.FAIL_ON_STARTUP=true
 kubectl -n playground rollout status \
@@ -103,7 +103,7 @@ kubectl -n playground get endpointslices \
 linkerd diagnostics endpoints playground-server-http.playground.svc.cluster.local:8080
 # No endpoints found.
 
-5. 
+# 5. 아웃바운드 밸런서의 엔드포인트가 0이고 에러 카운터가 증가하지 않는다:
 POD=$(kubectl -n playground get pod -l app=playground-client \
         -o jsonpath='{.items[0].metadata.name}')
 linkerd diagnostics proxy-metrics -n playground pod/"$POD" \
@@ -119,7 +119,7 @@ linkerd diagnostics proxy-metrics -n playground pod/"$POD" \
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.11 --reuse-values \
+  --version 1.1.0 --reuse-values \
   --set http.primary.env.FAIL_ON_STARTUP=false \
   --set http.canary.env.FAIL_ON_STARTUP=false
 kubectl -n playground rollout restart \
@@ -140,7 +140,7 @@ kubectl -n playground rollout status \
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.11 --reset-values
+  --version 1.1.0 --reset-values
 kubectl -n playground rollout status \
   deploy/playground-server-http-primary deploy/playground-server-http-canary
 ```

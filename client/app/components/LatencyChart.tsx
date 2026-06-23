@@ -73,7 +73,7 @@ export function LatencyChart({ samples }: { samples: Sample[] }) {
               y={t.y + 3}
               textAnchor="end"
               fill="#8099ac"
-              style={{ fontFamily: 'Inconsolata, monospace', fontSize: '10px' }}
+              style={{ fontFamily: 'Inconsolata, monospace', fontSize: '11px' }}
             >
               {t.v}
             </text>
@@ -81,7 +81,7 @@ export function LatencyChart({ samples }: { samples: Sample[] }) {
         ))}
 
         <path d={areaPath} fill="url(#lat-grad)" />
-        <path d={linePath} stroke="#003359" strokeWidth="1.5" fill="none" />
+        <path d={linePath} stroke="#003359" strokeWidth="2" fill="none" />
 
         {pts.map((p, i) => (
           <circle
@@ -98,7 +98,7 @@ export function LatencyChart({ samples }: { samples: Sample[] }) {
           y={H - 6}
           textAnchor="end"
           fill="#8099ac"
-          style={{ fontFamily: 'Inconsolata, monospace', fontSize: '10px' }}
+          style={{ fontFamily: 'Inconsolata, monospace', fontSize: '11px' }}
         >
           {t('chart.now')}
         </text>
@@ -107,7 +107,7 @@ export function LatencyChart({ samples }: { samples: Sample[] }) {
           y={H - 6}
           textAnchor="start"
           fill="#8099ac"
-          style={{ fontFamily: 'Inconsolata, monospace', fontSize: '10px' }}
+          style={{ fontFamily: 'Inconsolata, monospace', fontSize: '11px' }}
         >
           {t('chart.ago', { n: ordered.length })}
         </text>
@@ -115,7 +115,7 @@ export function LatencyChart({ samples }: { samples: Sample[] }) {
           x={PAD.left}
           y={PAD.top - 4}
           fill="#8099ac"
-          style={{ fontFamily: 'Inconsolata, monospace', fontSize: '10px' }}
+          style={{ fontFamily: 'Inconsolata, monospace', fontSize: '11px' }}
         >
           ms
         </text>

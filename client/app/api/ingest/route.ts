@@ -17,7 +17,7 @@ function isSample(v: unknown): v is Sample {
 
 // Ingest endpoint: the playground-client generator POSTs each Sample here. We
 // record it into the shared store, which fans out to the SSE stream the
-// browser is watching — so the dashboard's flow diagram + counters stay live.
+// browser is watching - so the dashboard's flow diagram + counters stay live.
 export async function POST(req: Request) {
   let body: unknown;
   try {

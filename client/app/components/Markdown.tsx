@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslation } from '../lib/i18n';
 import { CheckIcon, CopyIcon } from './Icons';
+import { MermaidDiagram } from './MermaidDiagram';
 
 interface MarkdownProps {
   content: string;
@@ -57,14 +58,14 @@ export function Markdown({ content }: MarkdownProps) {
                 href={href}
                 target={external ? '_blank' : undefined}
                 rel={external ? 'noreferrer' : undefined}
-                className="text-navy underline decoration-electric decoration-2 underline-offset-2 hover:text-electric"
+                className="rounded-sm text-navy underline decoration-electric decoration-2 underline-offset-2 hover:text-navy-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric/40"
                 {...props}
               />
             );
           },
           blockquote: props => (
             <blockquote
-              className="my-5 border-l-2 border-electric bg-navy-2 px-5 py-3 text-navy-70"
+              className="my-5 border-l-2 border-electric bg-navy-3 px-5 py-3 text-navy-70"
               {...props}
             />
           ),
@@ -190,8 +191,13 @@ function CodeBlock({ children }: { children: ReactNode }) {
   const codeEl = (Array.isArray(children) ? children[0] : children) as
     | { props?: { className?: string } }
     | undefined;
-  const isCommand = (codeEl?.props?.className ?? '').startsWith('language-');
+  const lang = codeEl?.props?.className ?? '';
+  const isCommand = lang.startsWith('language-');
   const text = extractText(children).replace(/\n+$/, '');
+
+  if (lang.includes('language-mermaid')) {
+    return <MermaidDiagram chart={text} />;
+  }
 
   return (
     <div className="group relative my-5">
@@ -200,7 +206,9 @@ function CodeBlock({ children }: { children: ReactNode }) {
           isCommand ? 'pr-12' : ''
         }`}
       >
-        {children}
+        {/* Render the extracted text directly: blocks without a language would
+            otherwise hit the inline-code path and get a near-white chip bg. */}
+        <code className="bg-transparent p-0 font-mono text-electric">{text}</code>
       </pre>
       {isCommand && <CopyButton text={text} />}
     </div>

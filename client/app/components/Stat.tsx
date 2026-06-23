@@ -18,7 +18,7 @@ export function Stat({
   const valueClass =
     tone === 'warn' ? 'text-yellow' : tone === 'err' ? 'text-red' : 'text-navy';
   const cardBg = highlight
-    ? 'bg-card-glow border-transparent'
+    ? 'bg-card-glow border-electric/30'
     : 'bg-white border-gray1';
   const showCounters = okCount !== undefined && failCount !== undefined;
   return (

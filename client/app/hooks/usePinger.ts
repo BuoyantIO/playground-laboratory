@@ -16,7 +16,7 @@ export function usePinger() {
 
   // Subscribe to the dashboard's sample stream. Samples are produced by the
   // separate playground-client generator and pushed to /api/ingest, which fans
-  // them out here — so opening the page shows whatever the generator has been
+  // them out here - so opening the page shows whatever the generator has been
   // doing, with no browser-side traffic generation.
   useEffect(() => {
     const es = new EventSource('/api/samples/stream');
@@ -73,7 +73,7 @@ export function usePinger() {
         })),
       )
       .catch(() => {
-        // /api/config unreachable — keep defaults.
+        // /api/config unreachable - keep defaults.
       });
   }, []);
 
@@ -95,7 +95,7 @@ export function usePinger() {
       .then((r) => r.json())
       .then((c: GeneratorConfig) => setConfigState(c))
       .catch(() => {
-        // best-effort — local state still reflects the user's intent
+        // best-effort - local state still reflects the user's intent
       });
   }, []);
 

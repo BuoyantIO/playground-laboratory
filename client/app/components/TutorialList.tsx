@@ -33,12 +33,12 @@ export function TutorialList({ tutorials }: { tutorials: TutorialMeta[] }) {
           <li key={meta.slug}>
             <Link
               href={`/tutorials/${meta.slug}`}
-              className="group flex h-full flex-col rounded-card border border-navy-10 bg-white p-6 transition hover:border-navy-40 hover:shadow-sm"
+              className="group flex h-full flex-col rounded-card border border-navy-10 bg-white p-6 transition hover:border-navy-40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric/40 focus-visible:ring-offset-2"
             >
               <span className="font-mono text-xs uppercase tracking-[0.18em] text-navy-50">
                 {t('tutorials.runbook')} {meta.order}
               </span>
-              <span className="mt-3 font-sans text-lg font-semibold text-navy group-hover:text-electric">
+              <span className="mt-3 font-sans text-lg font-semibold text-navy group-hover:text-navy-90">
                 {meta.title[lang]}
               </span>
               <span className="mt-3 text-sm leading-relaxed text-navy-70">

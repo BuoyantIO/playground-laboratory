@@ -242,21 +242,22 @@ outbound proxy logs above.
 
 A meshed pod's traffic flow:
 
-```
-client pod                                       server pod
-┌──────────────┐                            ┌─────────────────────┐
-│ app          │                            │ app  :8080 (lo only)│
-│  │           │                            │  ▲                  │
-│  ▼ localhost │                            │  │ localhost        │
-│ proxy(out)   │ ─── mTLS ───────► proxy(in):4143                  │
-└──────────────┘                            └─────────────────────┘
+```mermaid
+flowchart LR
+  subgraph client["client pod"]
+    CA["app"] -->|localhost| CP["proxy (out)"]
+  end
+  subgraph server["server pod"]
+    SP["proxy (in) :4143"] -->|localhost| SA["app :8080 (lo only)"]
+  end
+  CP -->|mTLS| SP
 ```
 
 `linkerd-init` (or the linkerd-cni plugin) installs iptables rules that
 redirect all inbound non-localhost traffic to the proxy on `:4143`. The
 app listens only on loopback. Block `:4143` and the proxy cannot accept
-the connection; the outbound side sees ECONNREFUSED. Same code path as
-runbook 03, completely different root cause.
+the connection; the outbound side sees ECONNREFUSED, the same code path as
+an ordinary connection refusal but a completely different root cause.
 
 ## Diagnose
 

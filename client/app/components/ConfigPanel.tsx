@@ -34,7 +34,7 @@ export function ConfigPanel({
   const contentId = useId();
 
   return (
-    <section className="mt-8 overflow-hidden rounded-lg border border-navy-10 bg-navy-2">
+    <section className="mt-8 overflow-hidden rounded-lg border border-navy-10 bg-navy-3">
       <button
         type="button"
         onClick={() => setOpen(o => !o)}

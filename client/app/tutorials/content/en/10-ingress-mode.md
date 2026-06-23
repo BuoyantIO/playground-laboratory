@@ -1,5 +1,7 @@
 # 10 - Meshing an ingress without bypassing Linkerd routing (`service-upstream`, `routingType` & ingress mode)
 
+> 📊 **Slides:** [nginx & ingress controllers](https://docs.google.com/presentation/d/19BBQMUElJJqZr9HuAt49ckwsyarPVLAaNXRUv49Qduk/edit?usp=sharing)
+
 Linkerd doesn't ship an ingress controller. You mesh the one you already
 run (ingress-nginx, Traefik, Envoy Gateway, kgateway, …) by injecting the
 `linkerd-proxy` sidecar like any other workload. The catch is in **how an
@@ -657,6 +659,16 @@ kubectl delete ns traefik --ignore-not-found
 ```
 
 ## Why this happens
+
+```mermaid
+flowchart TD
+  I["ingress controller"] --> Q{"dials ClusterIP or pod IP?"}
+  Q -->|ClusterIP| L["proxy resolves logical Service"]
+  L --> POL["HTTPRoute / weights / retries apply"]
+  Q -->|pod IP| D["proxy sees one endpoint, forwards as-is"]
+  D --> SKIP["Service policy skipped"]
+  D -. "ingress mode" .-> L
+```
 
 The outbound proxy decides where to send a connection from its **original
 destination address**, by asking the destination controller:

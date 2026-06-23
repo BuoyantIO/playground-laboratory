@@ -98,6 +98,19 @@ Running pods are unaffected; the UI stays green.
 
 ## Why this happens
 
+```mermaid
+sequenceDiagram
+  participant K as kubectl
+  participant API as API server
+  participant W as proxy-injector
+  K->>API: create pod
+  API->>W: TLS handshake (verify cert vs caBundle)
+  Note over API,W: caBundle expired - cert rejected
+  W--xAPI: handshake fails
+  API->>API: injection webhook skipped
+  API-->>K: pod admitted WITHOUT proxy
+```
+
 Kubernetes uses `clientConfig.caBundle` from the webhook config to
 verify the TLS cert presented by `linkerd-proxy-injector.linkerd.svc:443`
 and the other validating webhooks. The call chain is: API server →

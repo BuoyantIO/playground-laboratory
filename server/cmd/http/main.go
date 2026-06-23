@@ -15,7 +15,7 @@ func main() {
 	cfg := config.Load("8080")
 
 	if cfg.FailOnStartup {
-		log.Fatal("FAIL_ON_STARTUP=true — exiting before serve")
+		log.Fatal("FAIL_ON_STARTUP=true - exiting before serve")
 	}
 
 	fx := &faults.Injector{
@@ -58,16 +58,16 @@ func main() {
 		if fx.ShouldError() {
 			w.WriteHeader(cfg.ErrorCode)
 			fmt.Fprintf(w, "injected error %d\n", cfg.ErrorCode)
-			log.Printf("%d %s — request %d, version=%s, latency %dms, client-id=%q", cfg.ErrorCode, http.StatusText(cfg.ErrorCode), n, cfg.AppVersion, latency, meshClientID)
+			log.Printf("%d %s - request %d, version=%s, latency %dms, client-id=%q", cfg.ErrorCode, http.StatusText(cfg.ErrorCode), n, cfg.AppVersion, latency, meshClientID)
 			return
 		}
 
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintln(w, cfg.ResponseText)
-		log.Printf("200 OK — request %d, version=%s, latency %dms, client-id=%q", n, cfg.AppVersion, latency, meshClientID)
+		log.Printf("200 OK - request %d, version=%s, latency %dms, client-id=%q", n, cfg.AppVersion, latency, meshClientID)
 	})
 
-	log.Printf("server listening :%s — version=%s response=%q latency=%dms+%dms errorRate=%d%% errorCode=%d", cfg.Port, cfg.AppVersion, cfg.ResponseText, cfg.LatencyMs, cfg.LatencyJitterMs, cfg.ErrorRate, cfg.ErrorCode)
+	log.Printf("server listening :%s - version=%s response=%q latency=%dms+%dms errorRate=%d%% errorCode=%d", cfg.Port, cfg.AppVersion, cfg.ResponseText, cfg.LatencyMs, cfg.LatencyJitterMs, cfg.ErrorRate, cfg.ErrorCode)
 	if err := http.ListenAndServe(":"+cfg.Port, mux); err != nil {
 		log.Fatal(err)
 	}

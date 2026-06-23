@@ -56,9 +56,9 @@ metadata:
 spec:
   routes: []
   dstOverrides:
-    - authority: playground-server-http-primary.playground.svc.cluster.local.:8080
+    - authority: playground-server-http-primary.playground.svc.cluster.local:8080
       weight: 1000
-    - authority: playground-server-http-canary.playground.svc.cluster.local.:8080
+    - authority: playground-server-http-canary.playground.svc.cluster.local:8080
       weight: 0
 EOF
 kubectl rollout restart deploy -n playground -l app=playground-client
@@ -100,11 +100,12 @@ linkerd diagnostics profile playground-server-http.playground.svc.cluster.local
   },
   "dst_overrides": [
     {
-      "authority": "playground-server-http-primary.playground.svc.cluster.local.:8080",
-      "weight": 10000000
+      "authority": "playground-server-http-primary.playground.svc.cluster.local:8080",
+      "weight": 1000
     },
     {
-      "authority": "playground-server-http-canary.playground.svc.cluster.local.:8080"
+      "authority": "playground-server-http-canary.playground.svc.cluster.local:8080",
+      "weight": 0
     }
   ],
   "parent_ref": {
@@ -114,7 +115,7 @@ linkerd diagnostics profile playground-server-http.playground.svc.cluster.local
         "kind": "Service",
         "name": "playground-server-http",
         "namespace": "playground",
-        "port": 80
+        "port": 8080
       }
     }
   },

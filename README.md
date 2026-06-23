@@ -27,8 +27,8 @@ Helm chart, all published to GHCR.
 
 ### Prerequisites
 
-- A Kubernetes cluster — a fresh [k3d](https://k3d.io) cluster is the intended target
-- [Linkerd](https://linkerd.io) installed in the cluster — the chart annotates its namespace with `linkerd.io/inject: enabled`
+- A Kubernetes cluster (a fresh [k3d](https://k3d.io) cluster is the intended target)
+- [Linkerd](https://linkerd.io) installed in the cluster; the chart annotates its namespace with `linkerd.io/inject: enabled`
 - [Helm](https://helm.sh) 3.8+ (for OCI registry support)
 
 ### Install the chart
@@ -56,7 +56,7 @@ open http://localhost:3000
 
 ### Inject a failure
 
-Every fault is an env knob you flip at runtime with `helm upgrade` — e.g. make the
+Every fault is an env knob you flip at runtime with `helm upgrade`, e.g. make the
 canary slow and flaky:
 
 ```sh

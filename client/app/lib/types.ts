@@ -10,6 +10,12 @@ export type Sample = {
   meshClientId?: string;
   proxyError?: string;
   upstream?: string;
+  // Pod name of the generator that made the request (set by the generator).
+  clientPod?: string;
+  // The raw HTTP request line + headers actually sent (set by the generator),
+  // so the dashboard can show the on-the-wire request - readable when plaintext,
+  // shown encrypted when the call went over mTLS.
+  request?: string;
 };
 
 export type Counters = {

@@ -97,6 +97,17 @@ No endpoints found.
 
 ## Why this happens
 
+```mermaid
+flowchart TD
+  R["request"] --> B["outbound balancer"]
+  B --> Q{"ready endpoints > 0?"}
+  Q -->|yes| LB["load-balance to endpoint"]
+  Q -->|no| BUF["hold in queue"]
+  BUF --> T["failfast timeout (3s)"]
+  T --> FF["FailFastError"]
+  FF --> S["synthetic 504 to caller"]
+```
+
 The outbound load balancer wraps each destination in a queue with a failfast
 timeout:
 
@@ -150,7 +161,7 @@ request.
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.11 --reset-values
+  --version 1.1.0 --reset-values
 kubectl -n playground rollout status \
   deploy/playground-server-http-primary deploy/playground-server-http-canary
 ```

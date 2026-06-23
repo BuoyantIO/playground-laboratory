@@ -167,8 +167,6 @@ kubectl -n playground rollout restart deploy/playground-server-http-primary
 ## 되돌리기
 
 ```sh
-kubectl -n playground annotate svc playground-server-http \
-  config.linkerd.io/opaque-ports- --overwrite || true
 kubectl -n playground annotate deploy playground-server-http-primary \
   config.linkerd.io/opaque-ports- --overwrite || true
 kubectl -n playground rollout restart deploy/playground-server-http-primary

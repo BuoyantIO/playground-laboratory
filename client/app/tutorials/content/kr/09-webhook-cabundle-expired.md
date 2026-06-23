@@ -4,11 +4,11 @@ Linkerd Enterprise는 `MutatingWebhookConfiguration` 하나(`linkerd-proxy-injec
 
 `clientConfig.caBundle`은 Helm 설치 시 생성되는 유효기간 365일짜리 자체 서명 인증서입니다. 현장에서 흔한 원인은 1년 이상 Linkerd를 업그레이드하지 않아 인증서가 만료되는 경우입니다.
 
-## Setup
+## 설치
 
 [00-setup.md](00-setup.md)를 따라 클러스터, Linkerd Enterprise, playground 앱을 준비하세요. 시작 전에 UI에서 `mTLS` 배지와 함께 초록색 `200` 응답이 표시되어야 합니다.
 
-## Symptom
+## 증상
 
 - 기존 Pod들은 계속 동작하고 UI는 초록색 `200` 응답을 계속 표시합니다.
 - **`playground` 네임스페이스에서 새로 생성된 Pod에 `linkerd-proxy`
@@ -18,7 +18,7 @@ Linkerd Enterprise는 `MutatingWebhookConfiguration` 하나(`linkerd-proxy-injec
 
 이 장애는 admission 시점에서 발생하며 데이터 플레인의 문제가 아닙니다. 기존 워크로드는 정상이고, 다음 배포부터 실패하는 유형입니다.
 
-## Recreate
+## 재현
 
 caBundle을 이미 만료될 예정인 자체 서명 인증서로 교체합니다:
 
@@ -46,7 +46,7 @@ kubectl patch mutatingwebhookconfiguration \
 kubectl -n playground scale deploy -l app=playground-server-http --replicas=2
 ```
 
-## What you'll see
+## 무엇이 보일까
 
 새 Pod에 프록시가 주입되지 않습니다:
 
@@ -82,7 +82,20 @@ linkerd-webhooks-and-apisvc-tls
 
 실행 중인 Pod들은 영향을 받지 않으며, UI는 초록색 응답을 계속 표시합니다.
 
-## Why this happens
+## 왜 이런 일이 일어나는가
+
+```mermaid
+sequenceDiagram
+  participant K as kubectl
+  participant API as API server
+  participant W as proxy-injector
+  K->>API: create pod
+  API->>W: TLS handshake (verify cert vs caBundle)
+  Note over API,W: caBundle expired - cert rejected
+  W--xAPI: handshake fails
+  API->>API: injection webhook skipped
+  API-->>K: pod admitted WITHOUT proxy
+```
 
 Kubernetes는 `clientConfig.caBundle`을 사용해 `linkerd-proxy-injector.linkerd.svc:443` 등 validating webhook의 TLS 인증서를 검증합니다. 흐름은 API 서버 → webhook svc (TLS) → injector/validator Pod입니다. caBundle이 서버 인증서를 검증하지 못하면, API 서버는 admission 요청을 전송하기 전 TLS 핸드셰이크 단계에서 연결을 거부합니다.
 
@@ -90,7 +103,7 @@ injector Pod 자체와 Pod가 제시하는 TLS 인증서는 정상입니다. 문
 
 proxy-injector는 Pod *생성* 시점에만 호출됩니다. 한 번 주입된 사이드카는 웹훅의 추가 개입 없이 계속 동작하므로, 실행 중인 Pod들은 영향을 받지 않습니다.
 
-## Diagnose
+## 진단
 
 ```sh
 # 1. 각 Linkerd 웹훅의 caBundle을 확인합니다.
@@ -116,7 +129,7 @@ kubectl -n linkerd logs deploy/linkerd-proxy-injector --tail=20
 # 도착하지 않습니다)
 ```
 
-## Fix
+## 수정
 
 `helm upgrade` 또는 `linkerd upgrade`를 실행하면 유효기간 365일짜리 새 자체 서명 인증서가 생성됩니다.
 
@@ -130,7 +143,7 @@ linkerd check
 
 운영 환경에서 cert-manager를 사용하는 경우, 동기화와 caBundle 재배포가 자동으로 처리됩니다.
 
-## Revert
+## 되돌리기
 
 `Fix` 단계에서 caBundle을 복구했습니다. 확인:
 

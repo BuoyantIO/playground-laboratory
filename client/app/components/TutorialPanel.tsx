@@ -8,12 +8,11 @@ import { Markdown } from './Markdown';
 interface TutorialPanelProps {
   slug: string;
   onSlugChange: (slug: string) => void;
-  onClose: () => void;
 }
 
 type Content = Record<'en' | 'kr', string>;
 
-export function TutorialPanel({ slug, onSlugChange, onClose }: TutorialPanelProps) {
+export function TutorialPanel({ slug, onSlugChange }: TutorialPanelProps) {
   const { lang, t } = useTranslation();
   const [content, setContent] = useState<Content | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -42,9 +41,9 @@ export function TutorialPanel({ slug, onSlugChange, onClose }: TutorialPanelProp
 
   return (
     <div className="flex h-full flex-col bg-white">
-      {/* Header: tutorial selector + collapse */}
-      <div className="flex items-center gap-2 border-b border-navy-10 bg-navy-2 px-4 py-3">
-        <span className="hidden shrink-0 font-mono text-[11px] uppercase tracking-[0.16em] text-navy-50 xl:inline">
+      {/* Header: tutorial selector */}
+      <div className="flex items-center gap-2 border-b border-navy-10 bg-navy-3 px-3 py-2.5">
+        <span className="hidden shrink-0 font-mono text-[11px] uppercase tracking-[0.12em] text-navy-50 xl:inline">
           {t('panel.title')}
         </span>
         <select
@@ -59,15 +58,6 @@ export function TutorialPanel({ slug, onSlugChange, onClose }: TutorialPanelProp
             </option>
           ))}
         </select>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t('panel.collapse')}
-          title={t('panel.collapse')}
-          className="shrink-0 rounded-md border border-navy-20 px-3 py-1.5 font-mono text-sm leading-none text-navy-60 transition hover:bg-navy-5 hover:text-navy"
-        >
-          ›
-        </button>
       </div>
 
       {/* Body */}

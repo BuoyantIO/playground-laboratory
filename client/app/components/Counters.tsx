@@ -25,12 +25,12 @@ export function Counters({
     <div className="grid gap-4 md:grid-cols-4">
       <Stat
         label={t('counters.lastResponse')}
-        value={latest ? statusLabel(latest) : '—'}
+        value={latest ? statusLabel(latest) : '-'}
         tone={!latest ? undefined : latest.ok ? 'ok' : 'err'}
       />
       <Stat
         label={t('counters.lastLatency')}
-        value={latest ? `${latest.latencyMs} ms` : '—'}
+        value={latest ? `${latest.latencyMs} ms` : '-'}
         tone={latencyTone(latest?.latencyMs)}
       />
       <Stat

@@ -27,7 +27,7 @@ routes/dstOverrides를 가지고 있었다면, 이후 ServiceProfile을 삭제�
 `playground-server-http-canary`의 v2)이 apex 서비스 `playground-server-http`
 뒤에 위치한 구성을 사용합니다.
 
-## Setup
+## 설치
 
 [00-setup.md](00-setup.md)를 참조하여 새 클러스터, Linkerd Enterprise,
 playground 앱을 준비하세요. 진행 전에 UI에서 `mTLS` 배지와 초록색 `200`
@@ -35,11 +35,11 @@ playground 앱을 준비하세요. 진행 전에 UI에서 `mTLS` 배지와 초�
 라우팅하므로, UI의 Version 열은 `v1`(primary)과 `v2`(canary)를 번갈아
 표시해야 합니다.
 
-## Symptom
+## 증상
 
 두 증상 모두 같은 근본 메커니즘에서 비롯됩니다.
 
-### Symptom A: HTTPRoute가 처음부터 효과가 없는 것처럼 보임
+### 증상 A: HTTPRoute가 처음부터 효과가 없는 것처럼 보임
 
 - UI의 Version 열에 **v1만** (primary) 계속 표시됩니다.
 - v1 카운터는 증가하지만 v2 카운터는 멈춰 있습니다.
@@ -47,7 +47,7 @@ playground 앱을 준비하세요. 진행 전에 UI에서 `mTLS` 배지와 초�
 - `kubectl describe httproute playground-server-canary` 출력에 Linkerd 에러나
   충돌 경고가 없습니다.
 
-### Symptom B: HTTPRoute가 재시작 후에야 동작하기 시작함
+### 증상 B: HTTPRoute가 재시작 후에야 동작하기 시작함
 
 - 운영자가 Symptom A를 알아차리고, HTTPRoute로 전환되길 기대하며
   ServiceProfile을 삭제합니다.
@@ -55,7 +55,7 @@ playground 앱을 준비하세요. 진행 전에 UI에서 `mTLS` 배지와 초�
 - 몇 시간이 지나도 개선되지 않습니다.
 - 클라이언트 deployment를 재시작(롤링)한 후에야 v2가 나타나기 시작합니다.
 
-## Recreate
+## 재현
 
 두 증상을 순차적으로 재현합니다. 각 단계에 검증이 포함되어 있어 프록시의
 실제 동작을 확인할 수 있습니다. UI는 한 탭에 열어두고 터미널을 준비하세요.
@@ -72,9 +72,9 @@ metadata:
 spec:
   routes: []
   dstOverrides:
-    - authority: playground-server-http-primary.playground.svc.cluster.local.:8080
+    - authority: playground-server-http-primary.playground.svc.cluster.local:8080
       weight: 1000
-    - authority: playground-server-http-canary.playground.svc.cluster.local.:8080
+    - authority: playground-server-http-canary.playground.svc.cluster.local:8080
       weight: 0
 EOF
 kubectl rollout restart deploy -n playground -l app=playground-client
@@ -119,11 +119,12 @@ linkerd diagnostics profile playground-server-http.playground.svc.cluster.local
   },
   "dst_overrides": [
     {
-      "authority": "playground-server-http-primary.playground.svc.cluster.local.:8080",
-      "weight": 10000000
+      "authority": "playground-server-http-primary.playground.svc.cluster.local:8080",
+      "weight": 1000
     },
     {
-      "authority": "playground-server-http-canary.playground.svc.cluster.local.:8080"
+      "authority": "playground-server-http-canary.playground.svc.cluster.local:8080",
+      "weight": 0
     }
   ],
   "parent_ref": {
@@ -133,7 +134,7 @@ linkerd diagnostics profile playground-server-http.playground.svc.cluster.local
         "kind": "Service",
         "name": "playground-server-http",
         "namespace": "playground",
-        "port": 80
+        "port": 8080
       }
     }
   },
@@ -239,7 +240,7 @@ kubectl -n playground debug "$POD" \
 `weight: 100`으로 canary를 지정한 HTTPRoute는 여전히 효과가 없습니다.
 ServiceProfile은 사라졌지만, 프록시는 경로를 전환하지 않았습니다.
 
-## Why this happens
+## 왜 이런 일이 일어나는가
 
 아웃바운드 프록시는 각 대상에 대해 ServiceProfile 스트림(destination
 컨트롤러)과 OutboundPolicy 스트림(policy 컨트롤러)을 병렬로 구독합니다.
@@ -269,7 +270,7 @@ receiver에 영구적으로 구독된 채로 정책 receiver를 무시합니다.
 **HTTPRoute 활성화를 위해 ServiceProfile을 제거한 후에는, 해당 대상으로
 트래픽을 보내던 프록시들을 롤(roll)하세요.**
 
-## Diagnose
+## 진단
 
 ```sh
 # 1. 대상에 대한 ServiceProfile이 존재하는가?
@@ -298,7 +299,7 @@ kubectl -n playground logs deploy/playground-client -c linkerd-proxy --since=5m 
 # 사이드카가 재구성되지 않은 것입니다. 클라이언트를 롤하세요.
 ```
 
-## Fix
+## 수정
 
 ServiceProfile을 삭제하고 해당 대상으로 트래픽을 보내는 클라이언트를
 **반드시** 롤하세요. 두 단계 모두 필수입니다:

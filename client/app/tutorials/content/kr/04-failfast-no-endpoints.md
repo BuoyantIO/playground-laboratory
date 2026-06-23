@@ -89,6 +89,17 @@ No endpoints found.
 
 ## 왜 이런 일이 일어나는가
 
+```mermaid
+flowchart TD
+  R["request"] --> B["outbound balancer"]
+  B --> Q{"ready endpoints > 0?"}
+  Q -->|yes| LB["load-balance to endpoint"]
+  Q -->|no| BUF["hold in queue"]
+  BUF --> T["failfast timeout (3s)"]
+  T --> FF["FailFastError"]
+  FF --> S["synthetic 504 to caller"]
+```
+
 아웃바운드 로드 밸런서는 각 목적지를 failfast 타임아웃이 있는 큐로 감쌉니다.
 
 > 밸런서 내부에 사용 가능한 서비스가 없으면 "failfast" 상태로 진입하며, 이후 요청은 버퍼링 없이 즉시 실패합니다.
@@ -135,7 +146,7 @@ kubectl -n playground rollout status \
 ```sh
 helm upgrade demo \
   oci://ghcr.io/buoyantio/playground-laboratory/charts/playground \
-  --version 1.0.11 --reset-values
+  --version 1.1.0 --reset-values
 kubectl -n playground rollout status \
   deploy/playground-server-http-primary deploy/playground-server-http-canary
 ```

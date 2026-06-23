@@ -1,5 +1,7 @@
 # 10 - ingress를 메시에 포함하되 Linkerd 라우팅을 우회하지 않기 (`service-upstream`, `routingType` & ingress mode)
 
+> 📊 **슬라이드:** [nginx 및 인그레스 컨트롤러](https://docs.google.com/presentation/d/19BBQMUElJJqZr9HuAt49ckwsyarPVLAaNXRUv49Qduk/edit?usp=sharing)
+
 Linkerd는 자체 ingress 컨트롤러를 제공하지 않습니다. 대신 기존 컨트롤러(ingress-nginx, Traefik, Envoy Gateway, kgateway 등)에 다른 워크로드와 동일하게 `linkerd-proxy` 사이드카를 주입해 메시에 포함시킵니다. 문제는 **ingress 컨트롤러가 백엔드에 도달하는 방식**에 있습니다.
 
 대부분의 컨트롤러는 *직접* 엔드포인트를 선택합니다. 대상 Service의 `Endpoints`를 감시하다가 Pod를 하나 골라 **그 Pod의 IP로 직접** 연결합니다. Service의 ClusterIP로는 연결하지 않습니다. 메시에 포함된 컨트롤러의 outbound 프록시가 Pod IP를 향한 연결을 보면, 고정된 단일 엔드포인트로 취급해 바로 전달합니다. 그 결과 **Service** 수준의 기능이 조용히 건너뛰어집니다:
@@ -27,7 +29,7 @@ mTLS는 여전히 동작합니다. mTLS는 L7 아래 계층이고, destination �
 | kgateway | 호스트가 Service FQDN인 Static `Backend` | `enabled` |
 | Traefik (ClusterIP 노브가 없는 경우의 대안) | ingress mode + route마다 `l5d-dst-override` | `ingress` |
 
-## Setup
+## 설치
 
 클러스터, Linkerd Enterprise, playground 앱은 모두 [00-setup.md](00-setup.md)를 따르세요. 클러스터 변경은 필요 없습니다. 이 runbook은 `localhost:8081`로 ingress에 접속하며, 00-setup의 클러스터가 해당 호스트 포트를 컨트롤러의 `:80`에 매핑해 두기 때문입니다(`--port '8081:80@loadbalancer'`, `--disable=traefik`로 호스트의 `:80`을 확보). 진행 전에 UI에서 `mTLS` 배지와 함께 초록색 `200` 응답이 확인되어야 합니다.
 
@@ -559,7 +561,17 @@ helm uninstall traefik -n traefik
 kubectl delete ns traefik --ignore-not-found
 ```
 
-## Why this happens
+## 왜 이런 일이 일어나는가
+
+```mermaid
+flowchart TD
+  I["ingress controller"] --> Q{"dials ClusterIP or pod IP?"}
+  Q -->|ClusterIP| L["proxy resolves logical Service"]
+  L --> POL["HTTPRoute / weights / retries apply"]
+  Q -->|pod IP| D["proxy sees one endpoint, forwards as-is"]
+  D --> SKIP["Service policy skipped"]
+  D -. "ingress mode" .-> L
+```
 
 outbound 프록시는 **원래 목적지 주소(original destination address)**를 destination 컨트롤러에 질의해 연결을 결정합니다:
 
@@ -575,7 +587,7 @@ ingress 컨트롤러는 기본적으로 두 번째 경로를 택합니다. Servi
 
 **보안.** ingress mode에서 프록시는 `l5d-dst-override`가 가리키는 곳이면 어디든 라우팅합니다. 외부 클라이언트가 이 헤더를 설정할 수 있으면 ingress를 **클러스터 내부나 외부의 어떤 주소로든** 중계하게 만들 수 있습니다. SSRF급 open relay입니다. 들어오는 길목에서 `l5d-dst-override`를 항상 덮어쓰거나 제거하세요. Traefik의 `customRequestHeaders`는 덮어쓰므로 이를 자동으로 처리하지만, **모든** route에 적용해야 합니다. ingress mode는 네임스페이스 전체가 아닌 컨트롤러 **Pod**에만 적용해야 하는 이유이기도 합니다.
 
-## Diagnose
+## 진단
 
 ```sh
 # 1. 컨트롤러가 메시에 포함됐는가, 그리고 어떤 모드인가? (컨트롤러별로 label 교체)
@@ -615,7 +627,7 @@ kubectl -n playground get ingress playground \
 # (비어 있음) = 우회;  true = 해결됨
 ```
 
-## Fix
+## 수정
 
 핵심 원칙: HTTP/gRPC ingress는 백엔드에 **Service를 거쳐** 도달해야 합니다. 컨트롤러별 노브로 일반 주입을 유지하고, 노브가 없을 때만 ingress mode를 사용하세요:
 
@@ -629,7 +641,7 @@ kubectl -n playground get ingress playground \
 
 해결책 적용 후 동작 기반 probe를 다시 실행하세요. ingress를 통한 카나리 `HTTPRoute`가 **v2만**으로 resolve되어야 합니다.
 
-## Revert
+## 되돌리기
 
 ```sh
 # Ingress / route 객체 (실행한 컨트롤러에 해당하는 것)
